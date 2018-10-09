@@ -93,8 +93,8 @@ func getJsonMetadata() string {
 var tplActivityMetadataGoFile = `package {{.Package}}
 
 import (
+	"github.com/project-flogo/legacybridge"
 	"github.com/TIBCOSoftware/flogo-lib/core/activity"
-	"github.com/project-flogo/core/core/activity"
 )
 
 var jsonMetadata = ` + "`{{.MetadataJSON}}`" + `
@@ -102,14 +102,15 @@ var jsonMetadata = ` + "`{{.MetadataJSON}}`" + `
 // init create & register activity
 func init() {
 	md := activity.NewMetadata(jsonMetadata)
-	bridge.RegisterLegacyActivity(NewActivity(md))
+	legacybridge.RegisterLegacyActivity(NewActivity(md))
 }
 `
 
 var tplTriggerMetadataGoFile = `package {{.Package}}
 
 import (
-	"github.com/project-flogo/core/core/trigger"
+	"github.com/project-flogo/legacybridge"
+	"github.com/TIBCOSoftware/flogo-lib/core/trigger"
 )
 
 var jsonMetadata = ` + "`{{.MetadataJSON}}`" + `
@@ -117,7 +118,7 @@ var jsonMetadata = ` + "`{{.MetadataJSON}}`" + `
 // init create & register trigger factory
 func init() {
 	md := trigger.NewMetadata(jsonMetadata)
-	trigger.RegisterFactory(md.ID, NewFactory(md))
+	legacybridge.RegisterLegacyTriggerFactory(md.ID, NewFactory(md))
 }
 `
 
