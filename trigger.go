@@ -2,16 +2,23 @@ package legacybridge
 
 import (
 	"context"
+
 	olddata "github.com/TIBCOSoftware/flogo-lib/core/data"
 	oldtrigger "github.com/TIBCOSoftware/flogo-lib/core/trigger"
 	"github.com/project-flogo/core/data"
 	"github.com/project-flogo/core/data/coerce"
+	"github.com/project-flogo/core/support"
 	"github.com/project-flogo/core/trigger"
 )
 
 func RegisterLegacyTriggerFactory(ref string, factory oldtrigger.Factory) {
 	w := wrapTriggerFactory(factory)
 	trigger.LegacyRegister(ref, w)
+}
+
+func GetTrigger(trg oldtrigger.Trigger) trigger.Trigger {
+	ref := support.GetRef(trg)
+	return &triggerWrapper{legacyTrg: trg, ref: ref}
 }
 
 func wrapTriggerFactory(legacyFactory oldtrigger.Factory) trigger.Factory {
@@ -48,13 +55,18 @@ func (w *triggerFactoryWrapper) New(config *trigger.Config) (trg trigger.Trigger
 
 	//translate config
 	legacyTrg := w.legacyFactory.New(oldConfig)
-	trg = &triggerWrapper{legacyTrg: legacyTrg}
+	trg = &triggerWrapper{legacyTrg: legacyTrg, ref: oldConfig.Ref}
 
 	return trg, nil
 }
 
 type triggerWrapper struct {
 	legacyTrg oldtrigger.Trigger
+	ref       string
+}
+
+func (w *triggerWrapper) Ref() string {
+	return w.ref
 }
 
 func (w *triggerWrapper) Start() error {

@@ -7,6 +7,7 @@ import (
 	"github.com/project-flogo/core/data"
 	"github.com/project-flogo/core/data/metadata"
 	"github.com/project-flogo/core/data/resolve"
+	"github.com/project-flogo/core/support"
 )
 
 func RegisterLegacyActivity(act oldactivity.Activity) {
@@ -14,19 +15,32 @@ func RegisterLegacyActivity(act oldactivity.Activity) {
 	activity.LegacyRegister(act.Metadata().ID, wa)
 }
 
-func wrapActivity(legacyAct oldactivity.Activity) activity.Activity {
+func GetActivity(act oldactivity.Activity) activity.Activity {
+	return wrapActivity(act)
+}
 
-	aw := &activityWrapper{legacyAct: legacyAct}
+func wrapActivity(legacyAct oldactivity.Activity) activity.Activity {
+	ref := support.GetRef(legacyAct)
+	aw := &activityWrapper{legacyAct: legacyAct, ref: ref}
 	return aw
 }
 
 type activityWrapper struct {
 	legacyAct oldactivity.Activity
+	ref       string
+}
+
+func (aw *activityWrapper) Ref() string {
+	return aw.ref
 }
 
 func (aw *activityWrapper) Metadata() *activity.Metadata {
 
 	oldMd := aw.legacyAct.Metadata()
+
+	if oldMd == nil {
+		return nil
+	}
 
 	newMd := &activity.Metadata{IOMetadata: &metadata.IOMetadata{}}
 
