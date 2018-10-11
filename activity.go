@@ -8,6 +8,7 @@ import (
 	"github.com/project-flogo/core/data/metadata"
 	"github.com/project-flogo/core/data/resolve"
 	"github.com/project-flogo/core/support"
+	"github.com/project-flogo/flow/definition"
 )
 
 func RegisterLegacyActivity(act oldactivity.Activity) {
@@ -171,11 +172,11 @@ func (w *activityHostWrapper) Return(returnData map[string]*olddata.Attribute, e
 }
 
 func (w *activityHostWrapper) WorkingData() olddata.Scope {
-	return &scopeWrapper{s: w.host.WorkingData()}
+	return &scopeWrapper{s: w.host.Scope()}
 }
 
 func (w *activityHostWrapper) GetResolver() olddata.Resolver {
-	return &resolverWrapper{resolver: w.host.GetResolver()}
+	return &resolverWrapper{resolver: definition.GetDataResolver()}
 }
 
 type resolverWrapper struct {
