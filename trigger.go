@@ -22,12 +22,21 @@ func GetTrigger(trg oldtrigger.Trigger) trigger.Trigger {
 }
 
 func wrapTriggerFactory(legacyFactory oldtrigger.Factory) trigger.Factory {
-	w := &triggerFactoryWrapper{legacyFactory: legacyFactory}
+
+	oldTrigger := legacyFactory.New(nil)
+	newMd := toNewMetadata(oldTrigger.Metadata())
+
+	w := &triggerFactoryWrapper{legacyFactory: legacyFactory, newMd: newMd}
 	return w
 }
 
 type triggerFactoryWrapper struct {
 	legacyFactory oldtrigger.Factory
+	newMd         *trigger.Metadata
+}
+
+func (w *triggerFactoryWrapper) Metadata() *trigger.Metadata {
+	return w.newMd
 }
 
 func (w *triggerFactoryWrapper) New(config *trigger.Config) (trg trigger.Trigger, err error) {
@@ -77,9 +86,8 @@ func (w *triggerWrapper) Stop() error {
 	return w.legacyTrg.Stop()
 }
 
-func (w *triggerWrapper) Metadata() *trigger.Metadata {
+func toNewMetadata(oldMd *oldtrigger.Metadata) *trigger.Metadata {
 
-	oldMd := w.legacyTrg.Metadata()
 	newMd := &trigger.Metadata{}
 
 	newMd.Settings = make(map[string]data.TypedValue, len(oldMd.Settings))
@@ -158,7 +166,8 @@ func (w *wrapperHandlerInf) Handle(ctx context.Context, triggerData map[string]i
 }
 
 func (w *wrapperHandlerInf) GetSetting(setting string) (interface{}, bool) {
-	return w.handler.GetSetting(setting)
+	val, exists := w.handler.Settings()[setting]
+	return val, exists
 }
 
 func (w *wrapperHandlerInf) GetOutput() map[string]interface{} {
@@ -166,7 +175,7 @@ func (w *wrapperHandlerInf) GetOutput() map[string]interface{} {
 }
 
 func (w *wrapperHandlerInf) GetStringSetting(setting string) string {
-	val, exists := w.handler.GetSetting(setting)
+	val, exists := w.handler.Settings()[setting]
 	if !exists {
 		return ""
 	}
