@@ -3,63 +3,63 @@ package legacybridge
 import (
 	"errors"
 
-	olddata "github.com/TIBCOSoftware/flogo-lib/core/data"
+	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
 	"github.com/project-flogo/core/data"
 )
 
 // ToTypeEnum get the data type that corresponds to the specified name
-func ToNewTypeFromLegacy(legacyType olddata.Type) (data.Type, error) {
+func ToNewTypeFromLegacy(legacyType legacyData.Type) (data.Type, error) {
 
 	switch legacyType {
-	case olddata.TypeAny:
+	case legacyData.TypeAny:
 		return data.TypeAny, nil
-	case olddata.TypeString:
+	case legacyData.TypeString:
 		return data.TypeString, nil
-	case olddata.TypeInteger:
+	case legacyData.TypeInteger:
 		return data.TypeInt, nil
-	case olddata.TypeLong:
+	case legacyData.TypeLong:
 		return data.TypeInt64, nil
-	case olddata.TypeDouble:
+	case legacyData.TypeDouble:
 		return data.TypeFloat64, nil
-	case olddata.TypeBoolean:
+	case legacyData.TypeBoolean:
 		return data.TypeBool, nil
-	case olddata.TypeObject:
+	case legacyData.TypeObject:
 		return data.TypeObject, nil
-	case olddata.TypeParams:
+	case legacyData.TypeParams:
 		return data.TypeParams, nil
-	case olddata.TypeArray:
+	case legacyData.TypeArray:
 		return data.TypeArray, nil
-	case olddata.TypeComplexObject:
-		return data.TypeComplexObject, nil
+	case legacyData.TypeComplexObject:
+		return data.TypeObject, nil
 	default:
 		return 0, errors.New("unknown type: " + legacyType.String())
 	}
 }
 
 // ToTypeEnum get the data type that corresponds to the specified name
-func ToLegacyFromNewType(dataType data.Type) (olddata.Type, error) {
+func ToLegacyFromNewType(dataType data.Type) (legacyData.Type, error) {
 
 	switch dataType {
 	case data.TypeAny:
-		return olddata.TypeAny, nil
+		return legacyData.TypeAny, nil
 	case data.TypeString:
-		return olddata.TypeString, nil
+		return legacyData.TypeString, nil
 	case data.TypeInt:
-		return olddata.TypeInteger, nil
+		return legacyData.TypeInteger, nil
 	case data.TypeInt64:
-		return olddata.TypeLong, nil
+		return legacyData.TypeLong, nil
 	case data.TypeFloat64:
-		return olddata.TypeDouble, nil
+		return legacyData.TypeDouble, nil
 	case data.TypeBool:
-		return olddata.TypeBoolean, nil
+		return legacyData.TypeBoolean, nil
 	case data.TypeObject:
-		return olddata.TypeObject, nil
+		return legacyData.TypeObject, nil
 	case data.TypeParams:
-		return olddata.TypeParams, nil
+		return legacyData.TypeParams, nil
 	case data.TypeArray:
-		return olddata.TypeArray, nil
+		return legacyData.TypeArray, nil
 	case data.TypeComplexObject:
-		return olddata.TypeComplexObject, nil
+		return legacyData.TypeComplexObject, nil
 	default:
 		return 0, errors.New("unknown type: " + dataType.String())
 	}

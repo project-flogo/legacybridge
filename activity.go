@@ -1,33 +1,39 @@
 package legacybridge
 
 import (
-	oldactivity "github.com/TIBCOSoftware/flogo-lib/core/activity"
-	olddata "github.com/TIBCOSoftware/flogo-lib/core/data"
+	legacyActivity "github.com/TIBCOSoftware/flogo-lib/core/activity"
+	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
+
 	"github.com/project-flogo/core/activity"
 	"github.com/project-flogo/core/data"
 	"github.com/project-flogo/core/data/metadata"
 	"github.com/project-flogo/core/data/resolve"
+	"github.com/project-flogo/core/data/schema"
 	"github.com/project-flogo/core/support"
 	"github.com/project-flogo/flow/definition"
 )
 
-func RegisterLegacyActivity(act oldactivity.Activity) {
+func RegisterLegacyActivity(act legacyActivity.Activity) {
 	wa := wrapActivity(act)
 	activity.LegacyRegister(act.Metadata().ID, wa)
 }
 
-func GetActivity(act oldactivity.Activity) activity.Activity {
+func GetActivity(act legacyActivity.Activity) activity.Activity {
 	return wrapActivity(act)
 }
 
-func wrapActivity(legacyAct oldactivity.Activity) activity.Activity {
+func wrapActivity(legacyAct legacyActivity.Activity) activity.Activity {
 	ref := support.GetRef(legacyAct)
-	aw := &activityWrapper{legacyAct: legacyAct, ref: ref}
+
+	newMd := convertOldMetadata(legacyAct.Metadata())
+
+	aw := &activityWrapper{legacyAct: legacyAct, ref: ref, newMd: newMd}
 	return aw
 }
 
 type activityWrapper struct {
-	legacyAct oldactivity.Activity
+	legacyAct legacyActivity.Activity
+	newMd     *activity.Metadata
 	ref       string
 }
 
@@ -36,12 +42,10 @@ func (aw *activityWrapper) Ref() string {
 }
 
 func (aw *activityWrapper) Metadata() *activity.Metadata {
+	return aw.newMd
+}
 
-	oldMd := aw.legacyAct.Metadata()
-
-	if oldMd == nil {
-		return nil
-	}
+func convertOldMetadata(oldMd *legacyActivity.Metadata) *activity.Metadata {
 
 	newMd := &activity.Metadata{IOMetadata: &metadata.IOMetadata{}}
 
@@ -50,40 +54,62 @@ func (aw *activityWrapper) Metadata() *activity.Metadata {
 	newMd.Output = make(map[string]data.TypedValue, len(oldMd.Output))
 
 	for name, attr := range oldMd.Settings {
-		newType, _ := ToNewTypeFromLegacy(attr.Type())
-		newMd.Settings[name] = data.NewTypedValue(newType, attr.Value())
+		newMd.Settings[name] = convertOldAttribute(attr)
 	}
 
 	for name, attr := range oldMd.Input {
-		newType, _ := ToNewTypeFromLegacy(attr.Type())
-		newMd.Input[name] = data.NewTypedValue(newType, attr.Value())
+		newMd.Input[name] = convertOldAttribute(attr)
 	}
 
 	for name, attr := range oldMd.Output {
-		newType, _ := ToNewTypeFromLegacy(attr.Type())
-		newMd.Output[name] = data.NewTypedValue(newType, attr.Value())
+		newMd.Output[name] = convertOldAttribute(attr)
 	}
 
 	return newMd
 }
 
+func convertOldAttribute(attr *legacyData.Attribute) *data.Attribute {
+	newType, _ := ToNewTypeFromLegacy(attr.Type())
+	newVal := attr.Value()
+	var newSchema schema.Schema
+
+	//special handling for ComplexObjects
+	if attr.Type() == legacyData.TypeComplexObject && attr.Value() != nil {
+
+		if cVal, ok := attr.Value().(*legacyData.ComplexObject); ok {
+
+			newVal = cVal.Value
+
+			if cVal.Metadata != "" {
+				//has schema
+				def := &schema.Def{Type: "json", Value: cVal.Metadata}
+				s, err := schema.New(def)
+				if err != nil {
+					//log error
+				}
+				newSchema = s
+			}
+		}
+	}
+
+	return data.NewAttributeWithSchema(attr.Name(), newType, newVal, newSchema)
+}
+
 func (aw *activityWrapper) Eval(ctx activity.Context) (done bool, err error) {
-	legacyCtx := wrapActContext(ctx)
+	legacyCtx := wrapActContext(ctx, aw.legacyAct)
 	return aw.legacyAct.Eval(legacyCtx)
 }
 
-func wrapActContext(ctx activity.Context) oldactivity.Context {
-
-	wac := &activityCtxWrapper{ctx: ctx}
-
-	return wac
+func wrapActContext(ctx activity.Context, legacyAct legacyActivity.Activity) legacyActivity.Context {
+	return &activityCtxWrapper{ctx: ctx, legacyAct: legacyAct}
 }
 
 type activityCtxWrapper struct {
-	ctx activity.Context
+	legacyAct legacyActivity.Activity
+	ctx       activity.Context
 }
 
-func (w *activityCtxWrapper) ActivityHost() oldactivity.Host {
+func (w *activityCtxWrapper) ActivityHost() legacyActivity.Host {
 	return &activityHostWrapper{host: w.ctx.ActivityHost()}
 }
 
@@ -92,11 +118,53 @@ func (w *activityCtxWrapper) Name() string {
 }
 
 func (w *activityCtxWrapper) GetInput(name string) interface{} {
-	return w.ctx.GetInput(name)
+
+	val := w.ctx.GetInput(name)
+
+	// if the input value is complex, we need to modify it
+	if oldMdInput := w.legacyAct.Metadata().Input; oldMdInput != nil {
+		if attr, ok := oldMdInput[name]; ok {
+			if attr.Type() == legacyData.TypeComplexObject {
+				md := ""
+
+				//see if there is a corresponding input schema to construct complex object
+				if sIO, ok := w.ctx.(schema.HasSchemaIO); ok {
+					s := sIO.GetInputSchema(name)
+					if s != nil {
+						md = s.Value()
+					}
+				}
+
+				return &legacyData.ComplexObject{Metadata: md, Value: val}
+			}
+		}
+	}
+
+	return val
 }
 
 func (w *activityCtxWrapper) GetOutput(name string) interface{} {
-	return nil //used for schema
+
+	// if the input value is complex, we need to modify it
+	if oldMdOutput := w.legacyAct.Metadata().Output; oldMdOutput != nil {
+		if attr, ok := oldMdOutput[name]; ok {
+			if attr.Type() == legacyData.TypeComplexObject {
+				md := ""
+
+				//see if there is a corresponding input schema to construct complex object
+				if sIO, ok := w.ctx.(schema.HasSchemaIO); ok {
+					s := sIO.GetOutputSchema(name)
+					if s != nil {
+						md = s.Value()
+					}
+				}
+
+				return &legacyData.ComplexObject{Metadata: md, Value: nil}
+			}
+		}
+	}
+
+	return nil
 }
 
 func (w *activityCtxWrapper) SetOutput(name string, value interface{}) {
@@ -115,7 +183,7 @@ func (w *activityCtxWrapper) TaskName() string {
 	return w.ctx.Name()
 }
 
-func (w *activityCtxWrapper) FlowDetails() oldactivity.FlowDetails {
+func (w *activityCtxWrapper) FlowDetails() legacyActivity.FlowDetails {
 	return &flowDetails{host: w.ctx.ActivityHost()}
 }
 
@@ -131,28 +199,40 @@ func (w *activityHostWrapper) Name() string {
 	return w.host.Name()
 }
 
-func (w *activityHostWrapper) IOMetadata() *olddata.IOMetadata {
+func (w *activityHostWrapper) IOMetadata() *legacyData.IOMetadata {
 
 	md := w.host.IOMetadata()
 
-	oldMd := &olddata.IOMetadata{}
-	oldMd.Input = make(map[string]*olddata.Attribute, len(md.Input))
-	oldMd.Output = make(map[string]*olddata.Attribute, len(md.Output))
+	oldMd := &legacyData.IOMetadata{}
+	oldMd.Input = make(map[string]*legacyData.Attribute, len(md.Input))
+	oldMd.Output = make(map[string]*legacyData.Attribute, len(md.Output))
 
 	for name, tv := range md.Input {
-		legacyType, _ := ToLegacyFromNewType(tv.Type())
-		oldMd.Input[name], _ = olddata.NewAttribute(name, legacyType, tv.Value())
+		oldMd.Input[name], _ = toLegacyAttribute(name, tv)
 	}
 
 	for name, tv := range md.Output {
-		legacyType, _ := ToLegacyFromNewType(tv.Type())
-		oldMd.Output[name], _ = olddata.NewAttribute(name, legacyType, tv.Value())
+		oldMd.Output[name], _ = toLegacyAttribute(name, tv)
 	}
 
 	return oldMd
 }
 
-func (w *activityHostWrapper) Reply(replyData map[string]*olddata.Attribute, err error) {
+func toLegacyAttribute(name string, tv data.TypedValue) (*legacyData.Attribute, error) {
+	legacyType, _ := ToLegacyFromNewType(tv.Type())
+	legacyValue := tv.Value()
+
+	if tv.Type() == data.TypeObject {
+		if s, ok := tv.(schema.HasSchema); ok {
+			legacyType = legacyData.TypeComplexObject
+			legacyValue = &legacyData.ComplexObject{Metadata: s.Schema().Value(), Value: tv.Value()}
+		}
+	}
+
+	return legacyData.NewAttribute(name, legacyType, legacyValue)
+}
+
+func (w *activityHostWrapper) Reply(replyData map[string]*legacyData.Attribute, err error) {
 
 	reply := make(map[string]interface{}, len(replyData))
 	for _, attr := range replyData {
@@ -162,7 +242,7 @@ func (w *activityHostWrapper) Reply(replyData map[string]*olddata.Attribute, err
 	w.host.Reply(reply, err)
 }
 
-func (w *activityHostWrapper) Return(returnData map[string]*olddata.Attribute, err error) {
+func (w *activityHostWrapper) Return(returnData map[string]*legacyData.Attribute, err error) {
 	ret := make(map[string]interface{}, len(returnData))
 	for _, attr := range returnData {
 		ret[attr.Name()] = attr.Value()
@@ -171,11 +251,11 @@ func (w *activityHostWrapper) Return(returnData map[string]*olddata.Attribute, e
 	w.host.Reply(ret, err)
 }
 
-func (w *activityHostWrapper) WorkingData() olddata.Scope {
+func (w *activityHostWrapper) WorkingData() legacyData.Scope {
 	return &scopeWrapper{s: w.host.Scope()}
 }
 
-func (w *activityHostWrapper) GetResolver() olddata.Resolver {
+func (w *activityHostWrapper) GetResolver() legacyData.Resolver {
 	return &resolverWrapper{resolver: definition.GetDataResolver()}
 }
 
@@ -183,12 +263,12 @@ type resolverWrapper struct {
 	resolver resolve.CompositeResolver
 }
 
-func (w *resolverWrapper) Resolve(toResolve string, scope olddata.Scope) (value interface{}, err error) {
+func (w *resolverWrapper) Resolve(toResolve string, scope legacyData.Scope) (value interface{}, err error) {
 	return w.resolver.Resolve(toResolve, &legacyScopeWrapper{})
 }
 
 type legacyScopeWrapper struct {
-	s olddata.Scope
+	s legacyData.Scope
 }
 
 func (w *legacyScopeWrapper) GetValue(name string) (value interface{}, exists bool) {
@@ -209,9 +289,9 @@ type scopeWrapper struct {
 	s data.Scope
 }
 
-func (w *scopeWrapper) GetAttr(name string) (attr *olddata.Attribute, exists bool) {
+func (w *scopeWrapper) GetAttr(name string) (attr *legacyData.Attribute, exists bool) {
 	if val, exists := w.s.GetValue(name); exists {
-		attr, err := olddata.NewAttribute(name, olddata.TypeAny, val)
+		attr, err := legacyData.NewAttribute(name, legacyData.TypeAny, val)
 		if err != nil {
 			return nil, false
 		}
@@ -243,6 +323,6 @@ func (fd *flowDetails) Name() string {
 	return fd.host.Name()
 }
 
-func (fd *flowDetails) ReplyHandler() oldactivity.ReplyHandler {
+func (fd *flowDetails) ReplyHandler() legacyActivity.ReplyHandler {
 	return nil
 }
