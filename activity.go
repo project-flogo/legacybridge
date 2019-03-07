@@ -37,6 +37,10 @@ type activityWrapper struct {
 	ref       string
 }
 
+func (aw *activityWrapper) BypassValidation() bool {
+	return schemaValidationEnabled
+}
+
 func (aw *activityWrapper) Ref() string {
 	return aw.ref
 }
