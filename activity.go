@@ -172,6 +172,19 @@ func (w *activityCtxWrapper) GetOutput(name string) interface{} {
 }
 
 func (w *activityCtxWrapper) SetOutput(name string, value interface{}) {
+
+	if oldMdOutput := w.legacyAct.Metadata().Output; oldMdOutput != nil {
+
+		if attr, ok := oldMdOutput[name]; ok {
+			if attr.Type() == legacyData.TypeComplexObject {
+
+				if cVal, ok := value.(legacyData.ComplexObject); ok {
+					w.ctx.SetOutput(name, cVal.Value)
+				}
+			}
+		}
+	}
+
 	w.ctx.SetOutput(name, value)
 }
 
