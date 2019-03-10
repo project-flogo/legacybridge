@@ -9,7 +9,7 @@ const (
 	EnvLegacyBypassValidation = "FLOGO_LEGACY_BYPASS_VALIDATION"
 )
 
-var schemaValidationEnabled= true
+var schemaValidationEnabled = true
 
 func init() {
 	schemaValidationEnabled = IsValidationBypassEnabled()
