@@ -20,7 +20,7 @@ func ConvertLegacyJson(legacyJson string) (string, error) {
 		return "", err
 	}
 
-	newBytes, err := json.Marshal(newConfig)
+	newBytes, err := json.MarshalIndent(newConfig, "", "    ")
 	if err != nil {
 		return "", err
 	}
