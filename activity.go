@@ -178,8 +178,9 @@ func (w *activityCtxWrapper) SetOutput(name string, value interface{}) {
 		if attr, ok := oldMdOutput[name]; ok {
 			if attr.Type() == legacyData.TypeComplexObject {
 
-				if cVal, ok := value.(legacyData.ComplexObject); ok {
+				if cVal, ok := value.(*legacyData.ComplexObject); ok {
 					w.ctx.SetOutput(name, cVal.Value)
+					return
 				}
 			}
 		}
@@ -281,7 +282,7 @@ type resolverWrapper struct {
 }
 
 func (w *resolverWrapper) Resolve(toResolve string, scope legacyData.Scope) (value interface{}, err error) {
-	return w.resolver.Resolve(toResolve, &legacyScopeWrapper{})
+	return w.resolver.Resolve(toResolve, &legacyScopeWrapper{scope})
 }
 
 type legacyScopeWrapper struct {

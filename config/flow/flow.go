@@ -3,6 +3,7 @@ package flow
 import (
 	"fmt"
 
+	"github.com/project-flogo/core/activity"
 	"github.com/project-flogo/core/data"
 	"github.com/project-flogo/core/data/metadata"
 	"github.com/project-flogo/core/data/schema"
@@ -128,12 +129,39 @@ func createActivityConfig(rep *legacyDef.ActivityConfigRep) (*definition.Activit
 	input := make(map[string]interface{})
 	inputSchemas := make(map[string]*schema.Def)
 
+	act := activity.Get(rep.Ref)
+	if len(rep.Settings) > 0 {
+		activityCfg.Settings = make(map[string]interface{}, len(rep.Settings))
+
+		for name, value := range rep.Settings {
+			attr := act.Metadata().Settings[name]
+			if attr != nil && attr.Type() == data.TypeObject {
+				//To see if it is a complex object
+				co, err := legacyData.CoerceToComplexObject(value)
+				if err == nil {
+					if co.Value != nil && co.Value != "{}" {
+						activityCfg.Settings[name] = co.Value
+					}
+				}
+			}
+		}
+	}
+
 	if len(rep.InputAttrs) > 0 {
 		for key, value := range rep.InputAttrs {
-			if co, ok := value.(*legacyData.ComplexObject); ok {
-				input[key] = co.Value
-				if co.Metadata != "" {
-					inputSchemas[key] = &schema.Def{Type: "json", Value: co.Metadata}
+			attr := act.Metadata().Input[key]
+			if attr != nil && attr.Type() == data.TypeObject {
+				//To see if it is a complex object
+				co, err := legacyData.CoerceToComplexObject(value)
+				if err == nil {
+					if co.Value != nil && co.Value != "{}" {
+						input[key] = co.Value
+					}
+					if co.Metadata != "" {
+						inputSchemas[key] = &schema.Def{Type: "json", Value: co.Metadata}
+					}
+				} else {
+					input[key] = value
 				}
 			} else {
 				input[key] = value
@@ -146,14 +174,23 @@ func createActivityConfig(rep *legacyDef.ActivityConfigRep) (*definition.Activit
 
 	if len(rep.OutputAttrs) > 0 {
 		for key, value := range rep.OutputAttrs {
-			if co, ok := value.(*legacyData.ComplexObject); ok {
-				output[key] = co.Value
-				if co.Metadata != "" {
-					outputSchemas[key] = &schema.Def{Type: "json", Value: co.Metadata}
+			attr := act.Metadata().Output[key]
+			if attr != nil && attr.Type() == data.TypeObject {
+				co, err := legacyData.CoerceToComplexObject(value)
+				if err == nil {
+					if co.Value != nil && co.Value != "{}" {
+						output[key] = co.Value
+					}
+					if co.Metadata != "" {
+						outputSchemas[key] = &schema.Def{Type: "json", Value: co.Metadata}
+					}
+				} else {
+					output[key] = value
 				}
 			} else {
 				output[key] = value
 			}
+
 		}
 	}
 
