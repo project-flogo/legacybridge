@@ -184,7 +184,7 @@ type resolverWrapper struct {
 }
 
 func (w *resolverWrapper) Resolve(toResolve string, scope olddata.Scope) (value interface{}, err error) {
-	return w.resolver.Resolve(toResolve, &legacyScopeWrapper{})
+	return w.resolver.Resolve(toResolve, &legacyScopeWrapper{scope})
 }
 
 type legacyScopeWrapper struct {
