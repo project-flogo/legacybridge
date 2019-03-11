@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/project-flogo/core/action"
+	"github.com/project-flogo/core/data/resolve"
 	"github.com/project-flogo/core/data/schema"
 	"github.com/project-flogo/core/trigger"
 
@@ -112,7 +113,7 @@ func convertLegacyHandler(ctx *ConversionContext, ltHandlerConfig *legacyTrigger
 		newAction := &action.Config{Id: ltHandlerConfig.ActionId}
 		newActionCfg := &trigger.ActionConfig{Config: newAction}
 
-		input, output, err := ConvertLegacyMappings(ltHandlerConfig.Action.Mappings, nil)
+		input, output, err := ConvertLegacyMappings(ltHandlerConfig.Action.Mappings, resolve.GetBasicResolver())
 		if err != nil {
 			return nil, err
 		}
@@ -130,7 +131,7 @@ func convertLegacyHandler(ctx *ConversionContext, ltHandlerConfig *legacyTrigger
 
 		newActionCfg := &trigger.ActionConfig{Config: newAction}
 
-		input, output, err := ConvertLegacyMappings(ltHandlerConfig.Action.Mappings, nil)
+		input, output, err := ConvertLegacyMappings(ltHandlerConfig.Action.Mappings, resolve.GetBasicResolver())
 		if err != nil {
 			return nil, err
 		}

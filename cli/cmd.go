@@ -22,8 +22,8 @@ var outFile string
 
 var legacyCmd = &cobra.Command{
 	Use:   "legacy",
-	Short: "work with legacy flogo",
-	Long:  "Work with legacy flogo apps",
+	Short: "legacy support",
+	Long:  "Legacy support for flogo apps",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		//common.SetVerbose(verbose)
 	},

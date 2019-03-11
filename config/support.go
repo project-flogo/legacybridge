@@ -22,6 +22,10 @@ func (cc *ConversionContext) AddSchema()  {
 
 }
 
+func (cc *ConversionContext) AddImport()  {
+
+}
+
 
 func ConvertLegacyAttr(legacyAttr *legacyData.Attribute) (*data.Attribute, error) {
 

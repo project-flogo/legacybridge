@@ -338,6 +338,8 @@ func toString(val interface{}) (string, error) {
 		return strconv.FormatFloat(t, 'f', -1, 64), nil
 	case json.Number:
 		return t.String(), nil
+	case legacyData.MappingType:
+		return strconv.Itoa(int(t)), nil
 	default:
 		return "", nil
 	}
