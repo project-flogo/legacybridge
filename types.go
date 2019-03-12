@@ -58,8 +58,6 @@ func ToLegacyFromNewType(dataType data.Type) (legacyData.Type, error) {
 		return legacyData.TypeParams, nil
 	case data.TypeArray:
 		return legacyData.TypeArray, nil
-	case data.TypeComplexObject:
-		return legacyData.TypeComplexObject, nil
 	default:
 		return 0, errors.New("unknown type: " + dataType.String())
 	}
