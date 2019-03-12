@@ -1,6 +1,7 @@
 package flow
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/project-flogo/core/activity"
@@ -120,79 +121,15 @@ func createTask(rep *legacyDef.TaskRep) (*definition.TaskRep, error) {
 	return task, nil
 }
 
-func createActivityConfig(rep *legacyDef.ActivityConfigRep) (*definition.ActivityConfigRep, error) {
+func createActivityConfig(rep *legacyDef.ActivityConfigRep) (*activity.Config, error) {
 
-	activityCfg := &definition.ActivityConfigRep{}
+	activityCfg := &activity.Config{}
 	activityCfg.Settings = rep.Settings
 	activityCfg.Ref = rep.Ref
 
-	input := make(map[string]interface{})
-	inputSchemas := make(map[string]*schema.Def)
-
-	act := activity.Get(rep.Ref)
-	if len(rep.Settings) > 0 {
-		activityCfg.Settings = make(map[string]interface{}, len(rep.Settings))
-
-		for name, value := range rep.Settings {
-			attr := act.Metadata().Settings[name]
-			if attr != nil && attr.Type() == data.TypeObject {
-				//To see if it is a complex object
-				co, err := legacyData.CoerceToComplexObject(value)
-				if err == nil {
-					if co.Value != nil && co.Value != "{}" {
-						activityCfg.Settings[name] = co.Value
-					}
-				}
-			}
-		}
-	}
-
-	if len(rep.InputAttrs) > 0 {
-		for key, value := range rep.InputAttrs {
-			attr := act.Metadata().Input[key]
-			if attr != nil && attr.Type() == data.TypeObject {
-				//To see if it is a complex object
-				co, err := legacyData.CoerceToComplexObject(value)
-				if err == nil {
-					if co.Value != nil && co.Value != "{}" {
-						input[key] = co.Value
-					}
-					if co.Metadata != "" {
-						inputSchemas[key] = &schema.Def{Type: "json", Value: co.Metadata}
-					}
-				} else {
-					input[key] = value
-				}
-			} else {
-				input[key] = value
-			}
-		}
-	}
-
-	output := make(map[string]interface{})
-	outputSchemas := make(map[string]*schema.Def)
-
-	if len(rep.OutputAttrs) > 0 {
-		for key, value := range rep.OutputAttrs {
-			attr := act.Metadata().Output[key]
-			if attr != nil && attr.Type() == data.TypeObject {
-				co, err := legacyData.CoerceToComplexObject(value)
-				if err == nil {
-					if co.Value != nil && co.Value != "{}" {
-						output[key] = co.Value
-					}
-					if co.Metadata != "" {
-						outputSchemas[key] = &schema.Def{Type: "json", Value: co.Metadata}
-					}
-				} else {
-					output[key] = value
-				}
-			} else {
-				output[key] = value
-			}
-
-		}
-	}
+	settings, _ := convertValues(rep.Settings)
+	input, inputSchemas := convertValues(rep.InputAttrs)
+	output, outputSchemas := convertValues(rep.OutputAttrs)
 
 	if rep.Mappings != nil {
 		lm := &legacyData.IOMappings{}
@@ -217,6 +154,10 @@ func createActivityConfig(rep *legacyDef.ActivityConfigRep) (*definition.Activit
 		}
 	}
 
+	if len(settings) > 0 {
+		activityCfg.Settings = input
+	}
+
 	if len(input) > 0 {
 		activityCfg.Input = input
 	}
@@ -226,7 +167,7 @@ func createActivityConfig(rep *legacyDef.ActivityConfigRep) (*definition.Activit
 	}
 
 	if len(inputSchemas) > 0 || len(outputSchemas) > 0 {
-		activityCfg.Schemas = &definition.ActivitySchemasRep{}
+		activityCfg.Schemas = &activity.SchemaConfig{}
 
 		if len(inputSchemas) > 0 {
 			activityCfg.Schemas.Input = inputSchemas
@@ -250,4 +191,65 @@ func createLink(linkRep *legacyDef.LinkRep) *definition.LinkRep {
 	link.FromID = linkRep.FromID
 
 	return link
+}
+
+func convertValues(oldValues map[string]interface{}) (map[string]interface{}, map[string]interface{}) {
+
+	newVals := make(map[string]interface{})
+	newSchemas := make(map[string]interface{})
+
+	if len(oldValues) > 0 {
+		for name, value := range oldValues {
+			newVals[name] = value
+
+			if value != nil {
+				// cannot rely on activity metadata, since we don't know what is imported,
+				// so we guess based on value
+				v, s, ok := getComplexObjectInfo(value)
+
+				if ok {
+					newVals[name] = v
+					if s != "" {
+						newSchemas[name] = &schema.Def{Type: "json", Value: s}
+					}
+				}
+			}
+		}
+	}
+
+	return newVals, newSchemas
+}
+
+func getComplexObjectInfo(val interface{}) (interface{}, string, bool) {
+
+	switch t := val.(type) {
+	case string:
+		if val == "" {
+			return nil, "", false
+		} else {
+			complexObject := &legacyData.ComplexObject{}
+			err := json.Unmarshal([]byte(t), complexObject)
+			if err != nil {
+				return nil, "", false
+			}
+			return complexObject.Value, complexObject.Metadata, true
+		}
+	case map[string]interface{}:
+		v, hasVal := t["value"]
+		mdI, hasMd := t["metadata"]
+		md := ""
+		if hasMd {
+			md, hasMd = mdI.(string)
+		}
+
+		if hasVal || hasMd {
+			return v, md, true
+		}
+	case *legacyData.ComplexObject:
+		return t.Value, t.Metadata, true
+	default:
+		return nil, "", false
+	}
+
+	return nil, "", false
 }
