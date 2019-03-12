@@ -138,7 +138,10 @@ func (w *activityCtxWrapper) GetInput(name string) interface{} {
 						md = s.Value()
 					}
 				}
-
+				if val == "" {
+					//Set to empty object
+					val = "{}"
+				}
 				return &legacyData.ComplexObject{Metadata: md, Value: val}
 			}
 		}

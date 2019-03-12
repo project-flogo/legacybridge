@@ -208,7 +208,12 @@ func convertValues(oldValues map[string]interface{}) (map[string]interface{}, ma
 				v, s, ok := getComplexObjectInfo(value)
 
 				if ok {
-					newVals[name] = v
+					if v != "" && v != "{}" {
+						newVals[name] = v
+					} else {
+						//Empty value, remove it so we don't create a output mapper
+						delete(newVals, name)
+					}
 					if s != "" {
 						newSchemas[name] = &schema.Def{Type: "json", Value: s}
 					}
