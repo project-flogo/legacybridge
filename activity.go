@@ -256,20 +256,40 @@ func toLegacyAttribute(name string, tv data.TypedValue) (*legacyData.Attribute, 
 func (w *activityHostWrapper) Reply(replyData map[string]*legacyData.Attribute, err error) {
 
 	reply := make(map[string]interface{}, len(replyData))
-	for _, attr := range replyData {
-		reply[attr.Name()] = attr.Value()
+	for name, attr := range replyData {
+		if attr.Type() == legacyData.TypeComplexObject {
+			if attr.Value() != nil {
+				var compx *legacyData.ComplexObject
+				compx, err = legacyData.CoerceToComplexObject(attr.Value())
+				reply[name] = compx.Value
+			} else {
+				reply[name] = nil
+			}
+		} else {
+			reply[attr.Name()] = attr.Value()
+		}
 	}
-
 	w.host.Reply(reply, err)
 }
 
 func (w *activityHostWrapper) Return(returnData map[string]*legacyData.Attribute, err error) {
 	ret := make(map[string]interface{}, len(returnData))
-	for _, attr := range returnData {
-		ret[attr.Name()] = attr.Value()
+
+	for name, attr := range returnData {
+		if attr.Type() == legacyData.TypeComplexObject {
+			if attr.Value() != nil {
+				var compx *legacyData.ComplexObject
+				compx, err = legacyData.CoerceToComplexObject(attr.Value())
+				ret[name] = compx.Value
+			} else {
+				ret[name] = nil
+			}
+		} else {
+			ret[attr.Name()] = attr.Value()
+		}
 	}
 
-	w.host.Reply(ret, err)
+	w.host.Return(ret, err)
 }
 
 func (w *activityHostWrapper) WorkingData() legacyData.Scope {

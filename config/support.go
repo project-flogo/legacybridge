@@ -9,23 +9,21 @@ import (
 	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
 )
 
-
 type ConversionContext struct {
 	resources []*resource.Config
 }
 
-func (cc *ConversionContext) AddResource( res *resource.Config)  {
+func (cc *ConversionContext) AddResource(res *resource.Config) {
 	cc.resources = append(cc.resources, res)
 }
 
-func (cc *ConversionContext) AddSchema()  {
+func (cc *ConversionContext) AddSchema() {
 
 }
 
-func (cc *ConversionContext) AddImport()  {
+func (cc *ConversionContext) AddImport() {
 
 }
-
 
 func ConvertLegacyAttr(legacyAttr *legacyData.Attribute) (*data.Attribute, error) {
 
@@ -43,14 +41,27 @@ func ConvertLegacyAttr(legacyAttr *legacyData.Attribute) (*data.Attribute, error
 			if cVal.Metadata != "" {
 				//has schema
 				def := &schema.Def{Type: "json", Value: cVal.Metadata}
-				s, err := schema.New(def)
-				if err != nil {
-					return nil, err
-				}
-				newSchema = s
+				newSchema = &legacySchema{def}
 			}
 		}
 	}
 
 	return data.NewAttributeWithSchema(legacyAttr.Name(), newType, newVal, newSchema), nil
+}
+
+//To make sure json.marshal can serialize
+type legacySchema struct {
+	*schema.Def
+}
+
+func (s *legacySchema) Type() string {
+	return s.Def.Type
+}
+
+func (s *legacySchema) Value() string {
+	return s.Def.Value
+}
+
+func (*legacySchema) Validate(data interface{}) error {
+	return nil
 }

@@ -2,9 +2,11 @@ package legacybridge
 
 import (
 	"context"
-
+	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
 	olddata "github.com/TIBCOSoftware/flogo-lib/core/data"
 	oldtrigger "github.com/TIBCOSoftware/flogo-lib/core/trigger"
+	"github.com/project-flogo/core/data/schema"
+
 	"github.com/project-flogo/core/data"
 	"github.com/project-flogo/core/data/coerce"
 	"github.com/project-flogo/core/support"
@@ -18,7 +20,7 @@ func RegisterLegacyTriggerFactory(ref string, factory oldtrigger.Factory) {
 
 func GetTrigger(trg oldtrigger.Trigger) trigger.Trigger {
 	ref := support.GetRef(trg)
-	return &triggerWrapper{legacyTrg: trg, ref: ref}
+	return &triggerWrapper{legacyTrigger: trg, ref: ref}
 }
 
 func wrapTriggerFactory(legacyFactory oldtrigger.Factory) trigger.Factory {
@@ -26,13 +28,14 @@ func wrapTriggerFactory(legacyFactory oldtrigger.Factory) trigger.Factory {
 	oldTrigger := legacyFactory.New(nil)
 	newMd := toNewMetadata(oldTrigger.Metadata())
 
-	w := &triggerFactoryWrapper{legacyFactory: legacyFactory, newMd: newMd}
+	w := &triggerFactoryWrapper{legacyFactory: legacyFactory, newMd: newMd, legacyTrigger: oldTrigger}
 	return w
 }
 
 type triggerFactoryWrapper struct {
 	legacyFactory oldtrigger.Factory
 	newMd         *trigger.Metadata
+	legacyTrigger oldtrigger.Trigger
 }
 
 func (w *triggerFactoryWrapper) Metadata() *trigger.Metadata {
@@ -55,23 +58,38 @@ func (w *triggerFactoryWrapper) New(config *trigger.Config) (trg trigger.Trigger
 
 	oldConfig.Handlers = make([]*oldtrigger.HandlerConfig, len(config.Handlers))
 
-	for _, hConfig := range config.Handlers {
+	for i, hConfig := range config.Handlers {
 		oldHandleConfig := &oldtrigger.HandlerConfig{}
 
 		oldHandleConfig.Name = hConfig.Name
 		oldHandleConfig.Settings = hConfig.Settings
+		oldHandleConfig.Output = make(map[string]interface{})
+
+		for name, sche := range hConfig.OutputSchemas {
+			attr, ok := w.legacyTrigger.Metadata().Output[name]
+			if ok && attr.Type() == legacyData.TypeComplexObject {
+				s, err := schema.FindOrCreate(sche)
+				if err != nil {
+					return nil, err
+				}
+				oldHandleConfig.Output[name] = &legacyData.ComplexObject{Metadata: s.Value(), Value: nil}
+			}
+		}
+
+		oldConfig.Handlers[i] = oldHandleConfig
 	}
 
 	//translate config
 	legacyTrg := w.legacyFactory.New(oldConfig)
-	trg = &triggerWrapper{legacyTrg: legacyTrg, ref: oldConfig.Ref}
+	trg = &triggerWrapper{legacyTrigger: legacyTrg, ref: oldConfig.Ref, legacyHandlers: oldConfig.Handlers}
 
 	return trg, nil
 }
 
 type triggerWrapper struct {
-	legacyTrg oldtrigger.Trigger
-	ref       string
+	ref            string
+	legacyTrigger  oldtrigger.Trigger
+	legacyHandlers []*oldtrigger.HandlerConfig
 }
 
 func (w *triggerWrapper) Ref() string {
@@ -79,11 +97,11 @@ func (w *triggerWrapper) Ref() string {
 }
 
 func (w *triggerWrapper) Start() error {
-	return w.legacyTrg.Start()
+	return w.legacyTrigger.Start()
 }
 
 func (w *triggerWrapper) Stop() error {
-	return w.legacyTrg.Stop()
+	return w.legacyTrigger.Stop()
 }
 
 func toNewMetadata(oldMd *oldtrigger.Metadata) *trigger.Metadata {
@@ -120,8 +138,8 @@ func toNewMetadata(oldMd *oldtrigger.Metadata) *trigger.Metadata {
 
 func (w *triggerWrapper) Initialize(ctx trigger.InitContext) error {
 	//wrap init ctx
-	if iTrg, ok := w.legacyTrg.(oldtrigger.Initializable); ok {
-		wCtx := &triggerInitCtxWrapper{ctx}
+	if iTrg, ok := w.legacyTrigger.(oldtrigger.Initializable); ok {
+		wCtx := &triggerInitCtxWrapper{ctx: ctx, legacyHandlers: w.legacyHandlers}
 		return iTrg.Initialize(wCtx)
 	}
 
@@ -129,7 +147,8 @@ func (w *triggerWrapper) Initialize(ctx trigger.InitContext) error {
 }
 
 type triggerInitCtxWrapper struct {
-	ctx trigger.InitContext
+	ctx            trigger.InitContext
+	legacyHandlers []*oldtrigger.HandlerConfig
 }
 
 func (w *triggerInitCtxWrapper) GetHandlers() []*oldtrigger.Handler {
@@ -137,9 +156,8 @@ func (w *triggerInitCtxWrapper) GetHandlers() []*oldtrigger.Handler {
 
 	legacyHandlers := make([]*oldtrigger.Handler, len(handlers))
 	for i, handler := range handlers {
-
-		w := &wrapperHandlerInf{handler: handler}
-		legacyHandler := oldtrigger.NewHandlerAlt(w)
+		wrapHandler := &wrapperHandlerInf{handler: handler, legacyHandler: w.legacyHandlers[i]}
+		legacyHandler := oldtrigger.NewHandlerAlt(wrapHandler)
 		legacyHandlers[i] = legacyHandler
 	}
 
@@ -147,10 +165,19 @@ func (w *triggerInitCtxWrapper) GetHandlers() []*oldtrigger.Handler {
 }
 
 type wrapperHandlerInf struct {
-	handler trigger.Handler
+	handler       trigger.Handler
+	legacyHandler *oldtrigger.HandlerConfig
 }
 
 func (w *wrapperHandlerInf) Handle(ctx context.Context, triggerData map[string]interface{}) (map[string]*olddata.Attribute, error) {
+
+	for name, data := range triggerData {
+		value, _, ok := GetComplexObjectInfo(data)
+		if ok {
+			triggerData[name] = value
+		}
+	}
+
 	ret, err := w.handler.Handle(ctx, triggerData)
 	if err != nil {
 		return nil, err
@@ -171,7 +198,7 @@ func (w *wrapperHandlerInf) GetSetting(setting string) (interface{}, bool) {
 }
 
 func (w *wrapperHandlerInf) GetOutput() map[string]interface{} {
-	return nil
+	return w.legacyHandler.Output
 }
 
 func (w *wrapperHandlerInf) GetStringSetting(setting string) string {

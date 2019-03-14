@@ -1,13 +1,11 @@
 package flow
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/project-flogo/core/activity"
 	"github.com/project-flogo/core/data"
 	"github.com/project-flogo/core/data/metadata"
-	"github.com/project-flogo/core/data/schema"
 	"github.com/project-flogo/flow/definition"
 	"github.com/project-flogo/legacybridge/config"
 
@@ -127,9 +125,9 @@ func createActivityConfig(rep *legacyDef.ActivityConfigRep) (*activity.Config, e
 	activityCfg.Settings = rep.Settings
 	activityCfg.Ref = rep.Ref
 
-	settings, _ := convertValues(rep.Settings)
-	input, inputSchemas := convertValues(rep.InputAttrs)
-	output, outputSchemas := convertValues(rep.OutputAttrs)
+	settings, _ := config.ConvertValues(rep.Settings)
+	input, inputSchemas := config.ConvertValues(rep.InputAttrs)
+	output, outputSchemas := config.ConvertValues(rep.OutputAttrs)
 
 	if rep.Mappings != nil {
 		lm := &legacyData.IOMappings{}
@@ -191,70 +189,4 @@ func createLink(linkRep *legacyDef.LinkRep) *definition.LinkRep {
 	link.FromID = linkRep.FromID
 
 	return link
-}
-
-func convertValues(oldValues map[string]interface{}) (map[string]interface{}, map[string]interface{}) {
-
-	newVals := make(map[string]interface{})
-	newSchemas := make(map[string]interface{})
-
-	if len(oldValues) > 0 {
-		for name, value := range oldValues {
-			newVals[name] = value
-
-			if value != nil {
-				// cannot rely on activity metadata, since we don't know what is imported,
-				// so we guess based on value
-				v, s, ok := getComplexObjectInfo(value)
-
-				if ok {
-					if v != "" && v != "{}" {
-						newVals[name] = v
-					} else {
-						//Empty value, remove it so we don't create a output mapper
-						delete(newVals, name)
-					}
-					if s != "" {
-						newSchemas[name] = &schema.Def{Type: "json", Value: s}
-					}
-				}
-			}
-		}
-	}
-
-	return newVals, newSchemas
-}
-
-func getComplexObjectInfo(val interface{}) (interface{}, string, bool) {
-
-	switch t := val.(type) {
-	case string:
-		if val == "" {
-			return nil, "", false
-		} else {
-			complexObject := &legacyData.ComplexObject{}
-			err := json.Unmarshal([]byte(t), complexObject)
-			if err != nil {
-				return nil, "", false
-			}
-			return complexObject.Value, complexObject.Metadata, true
-		}
-	case map[string]interface{}:
-		v, hasVal := t["value"]
-		mdI, hasMd := t["metadata"]
-		md := ""
-		if hasMd {
-			md, hasMd = mdI.(string)
-		}
-
-		if hasVal || hasMd {
-			return v, md, true
-		}
-	case *legacyData.ComplexObject:
-		return t.Value, t.Metadata, true
-	default:
-		return nil, "", false
-	}
-
-	return nil, "", false
 }
