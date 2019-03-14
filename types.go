@@ -1,6 +1,7 @@
 package legacybridge
 
 import (
+	"encoding/json"
 	"errors"
 
 	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
@@ -61,4 +62,38 @@ func ToLegacyFromNewType(dataType data.Type) (legacyData.Type, error) {
 	default:
 		return 0, errors.New("unknown type: " + dataType.String())
 	}
+}
+
+func GetComplexObjectInfo(val interface{}) (interface{}, string, bool) {
+
+	switch t := val.(type) {
+	case string:
+		if val == "" {
+			return nil, "", false
+		} else {
+			complexObject := &legacyData.ComplexObject{}
+			err := json.Unmarshal([]byte(t), complexObject)
+			if err != nil {
+				return nil, "", false
+			}
+			return complexObject.Value, complexObject.Metadata, true
+		}
+	case map[string]interface{}:
+		v, hasVal := t["value"]
+		mdI, hasMd := t["metadata"]
+		md := ""
+		if hasMd {
+			md, hasMd = mdI.(string)
+		}
+
+		if hasVal || hasMd {
+			return v, md, true
+		}
+	case *legacyData.ComplexObject:
+		return t.Value, t.Metadata, true
+	default:
+		return nil, "", false
+	}
+
+	return nil, "", false
 }

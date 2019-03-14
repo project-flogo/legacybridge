@@ -5,9 +5,9 @@ import (
 	"github.com/project-flogo/core/data/resolve"
 	"github.com/project-flogo/core/data/schema"
 	"github.com/project-flogo/core/trigger"
+	"github.com/project-flogo/legacybridge"
 
 	legacyAction "github.com/TIBCOSoftware/flogo-lib/core/action"
-	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
 	legacyTrigger "github.com/TIBCOSoftware/flogo-lib/core/trigger"
 )
 
@@ -87,12 +87,15 @@ func convertLegacyHandler(ctx *ConversionContext, ltHandlerConfig *legacyTrigger
 	}
 
 	outSchemas := make(map[string]interface{})
-
-	for name, value := range ltHandlerConfig.Output {
-		if co, ok := value.(*legacyData.ComplexObject); ok {
-			if co.Metadata != "" {
-				outSchemas[name] = &schema.Def{Type: "json", Value: co.Metadata}
-			}
+	_, schemas := ConvertValues(ltHandlerConfig.Outputs)
+	if len(schemas) > 0 {
+		outSchemas = schemas
+	}
+	//outputs
+	_, oschemas := ConvertValues(ltHandlerConfig.Outputs)
+	if len(oschemas) > 0 {
+		for k, v := range oschemas {
+			outSchemas[k] = v
 		}
 	}
 
@@ -143,4 +146,36 @@ func convertLegacyHandler(ctx *ConversionContext, ltHandlerConfig *legacyTrigger
 	}
 
 	return newConfig, nil
+}
+
+func ConvertValues(oldValues map[string]interface{}) (map[string]interface{}, map[string]interface{}) {
+
+	newVals := make(map[string]interface{})
+	newSchemas := make(map[string]interface{})
+
+	if len(oldValues) > 0 {
+		for name, value := range oldValues {
+			newVals[name] = value
+
+			if value != nil {
+				// cannot rely on activity metadata, since we don't know what is imported,
+				// so we guess based on value
+				v, s, ok := legacybridge.GetComplexObjectInfo(value)
+
+				if ok {
+					if v != "" && v != "{}" {
+						newVals[name] = v
+					} else {
+						//Empty value, remove it so we don't create a output mapper
+						delete(newVals, name)
+					}
+					if s != "" {
+						newSchemas[name] = &schema.Def{Type: "json", Value: s}
+					}
+				}
+			}
+		}
+	}
+
+	return newVals, newSchemas
 }

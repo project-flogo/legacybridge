@@ -17,6 +17,9 @@ import (
 )
 
 //var testExprFactory = expression.NewFactory(resolve.GetBasicResolver())
+const (
+	MAP_TO_INPUT = "$INPUT"
+)
 
 func ConvertLegacyMappings(mappings *legacyData.IOMappings, resolver resolve.CompositeResolver) (input map[string]interface{}, output map[string]interface{}, err error) {
 
@@ -50,6 +53,7 @@ func handleMappings(mappings []*legacyData.MappingDef, resolver resolve.Composit
 
 	fieldNameMap := make(map[string][]*objectMappings)
 	for _, m := range mappings {
+		m.MapTo = RemovePrefixInput(m.MapTo)
 		//target is single field name
 		if strings.Index(m.MapTo, ".") <= 0 && !hasArray(m.MapTo) {
 			typ, _ := toString(m.Type)
@@ -321,10 +325,12 @@ func ToNewArray(mapping *LegacyArrayMapping, resolver resolve.CompositeResolver)
 }
 
 func ToNewArrayChildMapTo(old string) string {
+	old = RemovePrefixInput(old)
 	if strings.HasPrefix(old, "$.") || strings.HasPrefix(old, "$$") {
-		return old[2:]
+		old = old[2:]
 	}
-	return old
+
+	return RemoveBrackets(old)
 }
 
 // ToString coerce a value to a string
@@ -385,6 +391,28 @@ func convertMapperValue(value interface{}, typ string, resolver resolve.Composit
 	default:
 		return 0, errors.New("unsupported mapping type: " + typ)
 	}
+}
+
+func RemovePrefixInput(str string) string {
+	if str != "" && strings.HasPrefix(str, MAP_TO_INPUT) {
+		//Remove $INPUT for mapTo
+		newMapTo := str[len(MAP_TO_INPUT):]
+		if strings.HasPrefix(newMapTo, ".") {
+			newMapTo = newMapTo[1:]
+		}
+		str = newMapTo
+	}
+	return str
+}
+
+func RemoveBrackets(str string) string {
+	if len(str) > 0 {
+		if (strings.HasPrefix(str, `["`) && strings.HasSuffix(str, `"]`)) || (strings.HasPrefix(str, `['`) && strings.HasSuffix(str, `']`)) {
+			str = str[2:]
+			str = str[0 : len(str)-2]
+		}
+	}
+	return str
 }
 
 func hasArray(field string) bool {
