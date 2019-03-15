@@ -87,8 +87,13 @@ func handleMappings(mappings []*legacyData.MappingDef, resolver resolve.Composit
 
 	for k, v := range fieldNameMap {
 		var obj interface{}
+		var isObjectMapping bool
 		for _, objMapping := range v {
 			typ, _ := toString(objMapping.mapping.Type)
+			//If it is array mapping
+			if typ == "array" || typ == "5" {
+				isObjectMapping = true
+			}
 			//Convert value to new
 			val, err := convertMapperValue(objMapping.mapping.Value, typ, resolver)
 			if err != nil {
@@ -105,6 +110,7 @@ func handleMappings(mappings []*legacyData.MappingDef, resolver resolve.Composit
 			}
 
 			if len(objMapping.targetFields) > 0 {
+				isObjectMapping = true
 				obj, err = constructObjectFromPath(objMapping.targetFields, val, obj)
 				if err != nil {
 					return nil, err
@@ -112,10 +118,16 @@ func handleMappings(mappings []*legacyData.MappingDef, resolver resolve.Composit
 			} else {
 				obj = val
 			}
+
 		}
 
-		om := &mapper.ObjectMapping{Mapping: obj}
-		input[k] = om
+		//Only for object mapping
+		if isObjectMapping {
+			input[k] = &mapper.ObjectMapping{Mapping: obj}
+		} else {
+			input[k] = obj
+		}
+
 	}
 
 	return input, nil
@@ -379,9 +391,7 @@ func convertMapperValue(value interface{}, typ string, resolver resolve.Composit
 			return nil, err
 		}
 
-		om := &mapper.ObjectMapping{}
-		om.Mapping, err = ToNewArray(arrayMapping, resolver)
-		return om, err
+		return ToNewArray(arrayMapping, resolver)
 	case "primitive":
 		//This use to handle very old array mapping type
 		if priValue, ok := value.(string); ok {
