@@ -36,6 +36,7 @@ func ConvertLegacyAppConfig(laConfig *legacyApp.Config) (*app.Config, error) {
 	newConfig.Type = laConfig.Type
 	newConfig.Version = laConfig.Version
 	newConfig.Description = laConfig.Description
+	newConfig.AppModel = "1.1.0"
 
 	//collect imports
 
