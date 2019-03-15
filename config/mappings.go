@@ -462,10 +462,9 @@ func (m *MappingField) parseName() error {
 		return m.Parser()
 	case '[':
 		//Done
-		//TODO when is fieldName not nil?
-		if fieldName != "" {
-			m.fields = append(m.fields, fieldName)
-		}
+		//if fieldName != "" {
+		//	m.fields = append(m.fields, fieldName)
+		//}
 		m.s.Mode = scanner.ScanInts
 		nextAfterBracket := m.s.Scan()
 		if nextAfterBracket == '"' || nextAfterBracket == '\'' {
@@ -487,9 +486,9 @@ func (m *MappingField) parseName() error {
 			return m.Parser()
 		}
 	case scanner.EOF:
-		if fieldName != "" {
-			m.fields = append(m.fields, fieldName)
-		}
+		//if fieldName != "" {
+		//	m.fields = append(m.fields, fieldName)
+		//}
 	default:
 		fieldName = fieldName + m.s.TokenText()
 		if fieldName != "" {
@@ -559,7 +558,6 @@ func (m *MappingField) Parser() error {
 		m.fields = append(m.fields, m.s.TokenText())
 		return m.parseName()
 	}
-	return nil
 }
 
 func (m *MappingField) Start(jsonPath string) error {
