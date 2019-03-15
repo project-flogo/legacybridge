@@ -10,7 +10,7 @@ import (
 	legacyResource "github.com/TIBCOSoftware/flogo-lib/app/resource"
 )
 
-type ResourceDataConverter func(legacyData json.RawMessage)  (json.RawMessage, error)
+type ResourceDataConverter func(legacyData json.RawMessage) (json.RawMessage, error)
 
 var resourceDataConverters = make(map[string]ResourceDataConverter)
 

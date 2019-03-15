@@ -87,11 +87,13 @@ func convertLegacyHandler(ctx *ConversionContext, ltHandlerConfig *legacyTrigger
 	}
 
 	outSchemas := make(map[string]interface{})
-	_, schemas := ConvertValues(ltHandlerConfig.Outputs)
+
+	_, schemas := ConvertValues(ltHandlerConfig.Output)
 	if len(schemas) > 0 {
 		outSchemas = schemas
 	}
-	//outputs
+
+	//handle old deprecated outputs
 	_, oschemas := ConvertValues(ltHandlerConfig.Outputs)
 	if len(oschemas) > 0 {
 		for k, v := range oschemas {

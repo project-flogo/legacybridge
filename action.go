@@ -3,17 +3,18 @@ package legacybridge
 import (
 	"context"
 
-	oldaction "github.com/TIBCOSoftware/flogo-lib/core/action"
+	legacyAction "github.com/TIBCOSoftware/flogo-lib/core/action"
+
 	"github.com/project-flogo/core/action"
 	"github.com/project-flogo/core/data/metadata"
 )
 
-func RegisterLegacyAction(ref string, legacyFactory oldaction.Factory) {
+func RegisterLegacyAction(ref string, legacyFactory legacyAction.Factory) {
 	action.LegacyRegister(ref, &legacyFactoryWrapper{legacyFactory: legacyFactory})
 }
 
 type legacyFactoryWrapper struct {
-	legacyFactory oldaction.Factory
+	legacyFactory legacyAction.Factory
 }
 
 func (legacyFactoryWrapper) Initialize(ctx action.InitContext) error {
@@ -23,35 +24,35 @@ func (legacyFactoryWrapper) Initialize(ctx action.InitContext) error {
 
 func (w *legacyFactoryWrapper) New(config *action.Config) (action.Action, error) {
 
-	oldCfg := &oldaction.Config{}
-	oldCfg.Ref = config.Ref
-	oldCfg.Settings = config.Settings
-	oldCfg.Id = config.Id
+	lConfig := &legacyAction.Config{}
+	lConfig.Ref = config.Ref
+	lConfig.Settings = config.Settings
+	lConfig.Id = config.Id
 
-	legacyAct, err := w.legacyFactory.New(oldCfg)
+	legacyAct, err := w.legacyFactory.New(lConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	var wa action.Action
 
-	if act, ok := legacyAct.(oldaction.AsyncAction); ok {
+	if act, ok := legacyAct.(legacyAction.AsyncAction); ok {
 		wa = wrapAsyncAction(act)
-	} else if act, ok := legacyAct.(oldaction.SyncAction); ok {
+	} else if act, ok := legacyAct.(legacyAction.SyncAction); ok {
 		wa = wrapSyncAction(act)
 	}
 
 	return wa, nil
 }
 
-func wrapAsyncAction(legacyAct oldaction.AsyncAction) action.AsyncAction {
+func wrapAsyncAction(legacyAct legacyAction.AsyncAction) action.AsyncAction {
 
 	aw := &asyncActWrapper{legacyAct: legacyAct}
 	//todo wrap metadata
 	return aw
 }
 
-func wrapSyncAction(legacyAct oldaction.SyncAction) action.SyncAction {
+func wrapSyncAction(legacyAct legacyAction.SyncAction) action.SyncAction {
 
 	aw := &syncActWrapper{legacyAct: legacyAct}
 	//todo wrap metadata
@@ -59,7 +60,7 @@ func wrapSyncAction(legacyAct oldaction.SyncAction) action.SyncAction {
 }
 
 type asyncActWrapper struct {
-	legacyAct oldaction.AsyncAction
+	legacyAct legacyAction.AsyncAction
 }
 
 func (asyncActWrapper) Metadata() *action.Metadata {
@@ -75,7 +76,7 @@ func (asyncActWrapper) Run(context context.Context, inputs map[string]interface{
 }
 
 type syncActWrapper struct {
-	legacyAct oldaction.SyncAction
+	legacyAct legacyAction.SyncAction
 }
 
 func (syncActWrapper) Metadata() *action.Metadata {

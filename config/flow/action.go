@@ -57,7 +57,7 @@ func createResource(actionData *legacyFlow.ActionData) (*resource.Config, error)
 	resourceCfg := &resource.Config{ID: "flow:" + strconv.Itoa(time.Now().Nanosecond())}
 
 	if actionData.FlowCompressed != nil {
-		//todo uncompress flow
+		//todo un-compress flow
 		resourceCfg.Data = actionData.FlowCompressed
 	} else if actionData.Flow != nil {
 		resourceCfg.Data = actionData.Flow

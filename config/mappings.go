@@ -16,7 +16,6 @@ import (
 	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
 )
 
-//var testExprFactory = expression.NewFactory(resolve.GetBasicResolver())
 const (
 	MAP_TO_INPUT = "$INPUT"
 )
@@ -456,16 +455,16 @@ func (m *MappingField) GetFields() []string {
 	return m.fields
 }
 
-func (m *MappingField) paserName() error {
+func (m *MappingField) parseName() error {
 	fieldName := ""
 	switch ch := m.s.Scan(); ch {
 	case '.':
 		return m.Parser()
 	case '[':
 		//Done
-		if fieldName != "" {
-			m.fields = append(m.fields, fieldName)
-		}
+		//if fieldName != "" {
+		//	m.fields = append(m.fields, fieldName)
+		//}
 		m.s.Mode = scanner.ScanInts
 		nextAfterBracket := m.s.Scan()
 		if nextAfterBracket == '"' || nextAfterBracket == '\'' {
@@ -487,9 +486,9 @@ func (m *MappingField) paserName() error {
 			return m.Parser()
 		}
 	case scanner.EOF:
-		if fieldName != "" {
-			m.fields = append(m.fields, fieldName)
-		}
+		//if fieldName != "" {
+		//	m.fields = append(m.fields, fieldName)
+		//}
 	default:
 		fieldName = fieldName + m.s.TokenText()
 		if fieldName != "" {
@@ -529,7 +528,7 @@ func (m *MappingField) handleSpecialField(startQuotes int32) error {
 func (m *MappingField) Parser() error {
 	switch ch := m.s.Scan(); ch {
 	case '.':
-		return m.paserName()
+		return m.parseName()
 	case '[':
 		m.s.Mode = scanner.ScanInts
 		nextAfterBracket := m.s.Scan()
@@ -557,9 +556,8 @@ func (m *MappingField) Parser() error {
 		return nil
 	default:
 		m.fields = append(m.fields, m.s.TokenText())
-		return m.paserName()
+		return m.parseName()
 	}
-	return nil
 }
 
 func (m *MappingField) Start(jsonPath string) error {
