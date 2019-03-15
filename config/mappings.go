@@ -11,6 +11,7 @@ import (
 
 	"github.com/project-flogo/core/data/coerce"
 	"github.com/project-flogo/core/data/expression"
+	"github.com/project-flogo/core/data/mapper"
 	"github.com/project-flogo/core/data/resolve"
 
 	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
@@ -112,7 +113,9 @@ func handleMappings(mappings []*legacyData.MappingDef, resolver resolve.Composit
 				obj = val
 			}
 		}
-		input[k] = obj
+
+		om := &mapper.ObjectMapping{Mapping: obj}
+		input[k] = om
 	}
 
 	return input, nil
@@ -375,7 +378,10 @@ func convertMapperValue(value interface{}, typ string, resolver resolve.Composit
 		if err != nil {
 			return nil, err
 		}
-		return ToNewArray(arrayMapping, resolver)
+
+		om := &mapper.ObjectMapping{}
+		om.Mapping, err = ToNewArray(arrayMapping, resolver)
+		return om, err
 	case "primitive":
 		//This use to handle very old array mapping type
 		if priValue, ok := value.(string); ok {
