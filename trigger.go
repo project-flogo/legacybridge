@@ -109,7 +109,6 @@ func toNewMetadata(lMd *legacyTrigger.Metadata) *trigger.Metadata {
 	newMd := &trigger.Metadata{}
 
 	newMd.Settings = make(map[string]data.TypedValue, len(lMd.Settings))
-	newMd.HandlerSettings = make(map[string]data.TypedValue, len(lMd.Handler.Settings))
 	newMd.Reply = make(map[string]data.TypedValue, len(lMd.Reply))
 	newMd.Output = make(map[string]data.TypedValue, len(lMd.Output))
 
@@ -118,9 +117,12 @@ func toNewMetadata(lMd *legacyTrigger.Metadata) *trigger.Metadata {
 		newMd.Settings[name] = data.NewTypedValue(newType, attr.Value())
 	}
 
-	for _, attr := range lMd.Handler.Settings {
-		newType, _ := ToNewTypeFromLegacy(attr.Type())
-		newMd.HandlerSettings[attr.Name()] = data.NewTypedValue(newType, attr.Value())
+	if lMd.Handler != nil {
+		newMd.HandlerSettings = make(map[string]data.TypedValue, len(lMd.Handler.Settings))
+		for _, attr := range lMd.Handler.Settings {
+			newType, _ := ToNewTypeFromLegacy(attr.Type())
+			newMd.HandlerSettings[attr.Name()] = data.NewTypedValue(newType, attr.Value())
+		}
 	}
 
 	for name, attr := range lMd.Reply {
