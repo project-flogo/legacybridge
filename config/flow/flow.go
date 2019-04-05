@@ -1,10 +1,11 @@
 package flow
 
 import (
+	"encoding/json"
 	"fmt"
-
 	"github.com/project-flogo/core/activity"
 	"github.com/project-flogo/core/data"
+	"github.com/project-flogo/core/data/coerce"
 	"github.com/project-flogo/core/data/metadata"
 	"github.com/project-flogo/flow/definition"
 	"github.com/project-flogo/legacybridge/config"
@@ -123,8 +124,8 @@ func createActivityConfig(rep *legacyDef.ActivityConfigRep) (*activity.Config, e
 
 	activityCfg := &activity.Config{}
 	activityCfg.Settings = rep.Settings
-	activityCfg.Ref = rep.Ref
 
+	activityCfg.Ref = rep.Ref
 	settings, _ := config.ConvertValues(rep.Settings)
 	input, inputSchemas := config.ConvertValues(rep.InputAttrs)
 	output, outputSchemas := config.ConvertValues(rep.OutputAttrs)
@@ -153,11 +154,40 @@ func createActivityConfig(rep *legacyDef.ActivityConfigRep) (*activity.Config, e
 	}
 
 	if len(settings) > 0 {
-		activityCfg.Settings = input
+		activityCfg.Settings = settings
 	}
 
-	if len(input) > 0 {
-		activityCfg.Input = input
+	if rep.Ref == "github.com/TIBCOSoftware/flogo-contrib/activity/actreturn" {
+		activityCfg.Ref = "github.com/project-flogo/contrib/activity/actreturn"
+		//Handle return to new return
+		if input["mappings"] != nil {
+			byts, err := coerce.ToBytes(input["mappings"])
+			if err != nil {
+				return nil, err
+			}
+			var returnMapping = []*legacyData.MappingDef{}
+			err = json.Unmarshal(byts, &returnMapping)
+			if err != nil {
+				return nil, err
+			}
+			input, err = config.HandleMappings(returnMapping, definition.GetDataResolver())
+			if err != nil {
+				return nil, err
+			}
+
+			if len(activityCfg.Settings) > 0 {
+				activityCfg.Settings["mappings"] = input
+			} else {
+				settingMap := make(map[string]interface{})
+				settingMap["mappings"] = input
+				activityCfg.Settings = settingMap
+			}
+		}
+
+	} else {
+		if len(input) > 0 {
+			activityCfg.Input = input
+		}
 	}
 
 	if len(output) > 0 {

@@ -31,14 +31,14 @@ func ConvertLegacyMappings(mappings *legacyData.IOMappings, resolver resolve.Com
 	output = make(map[string]interface{}, len(mappings.Output))
 
 	if mappings.Input != nil {
-		input, err = handleMappings(mappings.Input, resolver)
+		input, err = HandleMappings(mappings.Input, resolver)
 		if err != nil {
 			return nil, nil, err
 		}
 	}
 
 	if mappings.Output != nil {
-		output, err = handleMappings(mappings.Output, resolver)
+		output, err = HandleMappings(mappings.Output, resolver)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -47,7 +47,7 @@ func ConvertLegacyMappings(mappings *legacyData.IOMappings, resolver resolve.Com
 	return input, output, nil
 }
 
-func handleMappings(mappings []*legacyData.MappingDef, resolver resolve.CompositeResolver) (map[string]interface{}, error) {
+func HandleMappings(mappings []*legacyData.MappingDef, resolver resolve.CompositeResolver) (map[string]interface{}, error) {
 
 	input := make(map[string]interface{})
 
