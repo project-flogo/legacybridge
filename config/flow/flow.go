@@ -157,34 +157,11 @@ func createActivityConfig(rep *legacyDef.ActivityConfigRep) (*activity.Config, e
 		activityCfg.Settings = settings
 	}
 
-	if rep.Ref == "github.com/TIBCOSoftware/flogo-contrib/activity/actreturn" {
-		activityCfg.Ref = "github.com/project-flogo/contrib/activity/actreturn"
-		//Handle return to new return
-		if input["mappings"] != nil {
-			byts, err := coerce.ToBytes(input["mappings"])
-			if err != nil {
-				return nil, err
-			}
-			var returnMapping = []*legacyData.MappingDef{}
-			err = json.Unmarshal(byts, &returnMapping)
-			if err != nil {
-				return nil, err
-			}
-			input, err = config.HandleMappings(returnMapping, definition.GetDataResolver())
-			if err != nil {
-				return nil, err
-			}
-
-			if len(activityCfg.Settings) > 0 {
-				activityCfg.Settings["mappings"] = input
-			} else {
-				settingMap := make(map[string]interface{})
-				settingMap["mappings"] = input
-				activityCfg.Settings = settingMap
-			}
-		}
-
-	} else {
+	ok, err := upgradeRetrunReply(input, rep, activityCfg)
+	if err != nil {
+		return nil, fmt.Errorf("upgrade %s error %s", rep.Ref, err.Error())
+	}
+	if !ok {
 		if len(input) > 0 {
 			activityCfg.Input = input
 		}
@@ -219,4 +196,47 @@ func createLink(linkRep *legacyDef.LinkRep) *definition.LinkRep {
 	link.FromID = linkRep.FromID
 
 	return link
+}
+
+func upgradeRetrunReply(input map[string]interface{}, rep *legacyDef.ActivityConfigRep, conf *activity.Config) (bool, error) {
+	var isReturnReply bool
+	if rep.Ref == "github.com/TIBCOSoftware/flogo-contrib/activity/actreturn" {
+		conf.Ref = "github.com/project-flogo/contrib/activity/actreturn"
+		isReturnReply = true
+	}
+
+	if rep.Ref == "github.com/TIBCOSoftware/flogo-contrib/activity/actreply" {
+		conf.Ref = "github.com/project-flogo/contrib/activity/actreply"
+		isReturnReply = true
+	}
+
+	if isReturnReply {
+		if input["mappings"] != nil {
+			byts, err := coerce.ToBytes(input["mappings"])
+			if err != nil {
+				return false, err
+			}
+			var returnMapping = []*legacyData.MappingDef{}
+			err = json.Unmarshal(byts, &returnMapping)
+			if err != nil {
+				return false, err
+			}
+			input, err = config.HandleMappings(returnMapping, definition.GetDataResolver())
+			if err != nil {
+				return false, err
+			}
+
+			if len(conf.Settings) > 0 {
+				conf.Settings["mappings"] = input
+			} else {
+				settingMap := make(map[string]interface{})
+				settingMap["mappings"] = input
+				conf.Settings = settingMap
+			}
+		}
+		return true, nil
+	}
+
+	return false, nil
+
 }
