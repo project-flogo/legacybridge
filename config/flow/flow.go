@@ -157,7 +157,7 @@ func createActivityConfig(rep *legacyDef.ActivityConfigRep) (*activity.Config, e
 		activityCfg.Settings = settings
 	}
 
-	ok, err := upgradeRetrunReply(input, rep, activityCfg)
+	ok, err := upgradeReturnReply(input, rep, activityCfg)
 	if err != nil {
 		return nil, fmt.Errorf("upgrade %s error %s", rep.Ref, err.Error())
 	}
@@ -198,7 +198,7 @@ func createLink(linkRep *legacyDef.LinkRep) *definition.LinkRep {
 	return link
 }
 
-func upgradeRetrunReply(input map[string]interface{}, rep *legacyDef.ActivityConfigRep, conf *activity.Config) (bool, error) {
+func upgradeReturnReply(input map[string]interface{}, rep *legacyDef.ActivityConfigRep, conf *activity.Config) (bool, error) {
 	var isReturnReply bool
 	if rep.Ref == "github.com/TIBCOSoftware/flogo-contrib/activity/actreturn" {
 		conf.Ref = "github.com/project-flogo/contrib/activity/actreturn"
