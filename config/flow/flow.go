@@ -1,10 +1,11 @@
 package flow
 
 import (
+	"encoding/json"
 	"fmt"
-
 	"github.com/project-flogo/core/activity"
 	"github.com/project-flogo/core/data"
+	"github.com/project-flogo/core/data/coerce"
 	"github.com/project-flogo/core/data/metadata"
 	"github.com/project-flogo/flow/definition"
 	"github.com/project-flogo/legacybridge/config"
@@ -123,8 +124,8 @@ func createActivityConfig(rep *legacyDef.ActivityConfigRep) (*activity.Config, e
 
 	activityCfg := &activity.Config{}
 	activityCfg.Settings = rep.Settings
-	activityCfg.Ref = rep.Ref
 
+	activityCfg.Ref = rep.Ref
 	settings, _ := config.ConvertValues(rep.Settings)
 	input, inputSchemas := config.ConvertValues(rep.InputAttrs)
 	output, outputSchemas := config.ConvertValues(rep.OutputAttrs)
@@ -153,11 +154,17 @@ func createActivityConfig(rep *legacyDef.ActivityConfigRep) (*activity.Config, e
 	}
 
 	if len(settings) > 0 {
-		activityCfg.Settings = input
+		activityCfg.Settings = settings
 	}
 
-	if len(input) > 0 {
-		activityCfg.Input = input
+	ok, err := upgradeReturnReply(input, rep, activityCfg)
+	if err != nil {
+		return nil, fmt.Errorf("upgrade %s error %s", rep.Ref, err.Error())
+	}
+	if !ok {
+		if len(input) > 0 {
+			activityCfg.Input = input
+		}
 	}
 
 	if len(output) > 0 {
@@ -189,4 +196,47 @@ func createLink(linkRep *legacyDef.LinkRep) *definition.LinkRep {
 	link.FromID = linkRep.FromID
 
 	return link
+}
+
+func upgradeReturnReply(input map[string]interface{}, rep *legacyDef.ActivityConfigRep, conf *activity.Config) (bool, error) {
+	var isReturnReply bool
+	if rep.Ref == "github.com/TIBCOSoftware/flogo-contrib/activity/actreturn" {
+		conf.Ref = "github.com/project-flogo/contrib/activity/actreturn"
+		isReturnReply = true
+	}
+
+	if rep.Ref == "github.com/TIBCOSoftware/flogo-contrib/activity/actreply" {
+		conf.Ref = "github.com/project-flogo/contrib/activity/actreply"
+		isReturnReply = true
+	}
+
+	if isReturnReply {
+		if input["mappings"] != nil {
+			byts, err := coerce.ToBytes(input["mappings"])
+			if err != nil {
+				return false, err
+			}
+			var returnMapping = []*legacyData.MappingDef{}
+			err = json.Unmarshal(byts, &returnMapping)
+			if err != nil {
+				return false, err
+			}
+			input, err = config.HandleMappings(returnMapping, definition.GetDataResolver())
+			if err != nil {
+				return false, err
+			}
+
+			if len(conf.Settings) > 0 {
+				conf.Settings["mappings"] = input
+			} else {
+				settingMap := make(map[string]interface{})
+				settingMap["mappings"] = input
+				conf.Settings = settingMap
+			}
+		}
+		return true, nil
+	}
+
+	return false, nil
+
 }
