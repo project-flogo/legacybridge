@@ -1,10 +1,17 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/project-flogo/core/data"
+	"github.com/project-flogo/core/data/expression/function"
+	"github.com/project-flogo/core/data/mapper"
+	"reflect"
 	"testing"
 
+	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
+	_ "github.com/project-flogo/core/data/expression/script"
 	"github.com/project-flogo/core/data/resolve"
 	"github.com/stretchr/testify/assert"
 )
@@ -232,7 +239,7 @@ func TestConvertMappingValue(t *testing.T) {
         ]
        }`
 
-	mapping := &LegacyMappings{}
+	mapping := &legacyData.IOMappings{}
 
 	err := json.Unmarshal([]byte(mappings), mapping)
 	assert.Nil(t, err)
@@ -278,7 +285,7 @@ func TestConvertMappingValue2(t *testing.T) {
         ]
        }`
 
-	mapping := &LegacyMappings{}
+	mapping := &legacyData.IOMappings{}
 
 	err := json.Unmarshal([]byte(mappings), mapping)
 	assert.Nil(t, err)
@@ -292,8 +299,8 @@ func TestConvertMappingValue2(t *testing.T) {
 	v2, _ := json.Marshal(output)
 	fmt.Println("output:", string(v2))
 
-	assert.Equal(t, "=$.body.id", input["input1"].(map[string]interface{})["a"].(map[string]interface{})["b"])
-	assert.Equal(t, "=$.body.name", input["input1"].(map[string]interface{})["a"].(map[string]interface{})["c"])
+	assert.Equal(t, "=$.body.id", input["input1"].(*mapper.ObjectMapping).Mapping.(map[string]interface{})["a"].(map[string]interface{})["b"])
+	assert.Equal(t, "=$.body.name", input["input1"].(*mapper.ObjectMapping).Mapping.(map[string]interface{})["a"].(map[string]interface{})["c"])
 
 }
 
@@ -330,7 +337,7 @@ func TestConvertMappingValue3(t *testing.T) {
         ]
        }`
 
-	mapping := &LegacyMappings{}
+	mapping := &legacyData.IOMappings{}
 
 	err := json.Unmarshal([]byte(mappings), mapping)
 	assert.Nil(t, err)
@@ -345,7 +352,7 @@ func TestConvertMappingValue3(t *testing.T) {
 	fmt.Println("output:", string(v2))
 	assert.Equal(t, "=$.body.name", input["data"].([]interface{})[0])
 	assert.Equal(t, "=$.body.name", input["data"].([]interface{})[1])
-	assert.Equal(t, "=$.body.id", input["input1"].([]interface{})[0].(map[string]interface{})["a"].(map[string]interface{})["b"])
+	assert.Equal(t, "=$.body.id", input["input1"].(*mapper.ObjectMapping).Mapping.([]interface{})[0].(map[string]interface{})["a"].(map[string]interface{})["b"])
 
 	//output
 	assert.Equal(t, "=$.res", output["data"].(map[string]interface{})["return"])
@@ -369,7 +376,7 @@ func TestConvertMappingValue4(t *testing.T) {
         ]
        }`
 
-	mapping := &LegacyMappings{}
+	mapping := &legacyData.IOMappings{}
 
 	err := json.Unmarshal([]byte(mappings), mapping)
 	assert.Nil(t, err)
@@ -424,7 +431,7 @@ func TestConvertMappingWithArrayMapping(t *testing.T) {
         ]
        }`
 
-	mapping := &LegacyMappings{}
+	mapping := &legacyData.IOMappings{}
 
 	err := json.Unmarshal([]byte(mappings), mapping)
 	assert.Nil(t, err)
@@ -439,10 +446,40 @@ func TestConvertMappingWithArrayMapping(t *testing.T) {
 	fmt.Println("output:", string(v2))
 	assert.Equal(t, "=$.body.name", input["data"].([]interface{})[0])
 	assert.Equal(t, "=$.body.name", input["data"].([]interface{})[1])
-	assert.Equal(t, "=$.body.id", input["input1"].([]interface{})[0].(map[string]interface{})["a"].(map[string]interface{})["b"])
-	assert.Equal(t, "=$.state", input["input1"].([]interface{})[1].(map[string]interface{})["c"].(map[string]interface{})["@foreach($activity[a1].field.addresses)"].(map[string]interface{})["state"])
+	assert.Equal(t, "=$.body.id", input["input1"].(*mapper.ObjectMapping).Mapping.([]interface{})[0].(map[string]interface{})["a"].(map[string]interface{})["b"])
+	assert.Equal(t, "=$.state", input["input1"].(*mapper.ObjectMapping).Mapping.([]interface{})[1].(map[string]interface{})["c"].(map[string]interface{})["@foreach($activity[a1].field.addresses)"].(map[string]interface{})["state"])
 	//output
 	assert.Equal(t, "=$.res", output["data"].(map[string]interface{})["return"])
 	assert.Equal(t, float64(200), output["code"])
 
+}
+
+func init() {
+	_ = function.Register(&fnConcat{})
+	function.SetPackageAlias(reflect.ValueOf(fnConcat{}).Type().PkgPath(), "tstring")
+	function.ResolveAliases()
+}
+
+type fnConcat struct {
+}
+
+func (fnConcat) Name() string {
+	return "concat"
+}
+
+func (fnConcat) Sig() (paramTypes []data.Type, isVariadic bool) {
+	return []data.Type{data.TypeString}, true
+}
+
+func (fnConcat) Eval(params ...interface{}) (interface{}, error) {
+	if len(params) >= 2 {
+		var buffer bytes.Buffer
+
+		for _, v := range params {
+			buffer.WriteString(v.(string))
+		}
+		return buffer.String(), nil
+	}
+
+	return "", fmt.Errorf("fnConcat function must have at least two arguments")
 }
