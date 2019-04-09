@@ -109,13 +109,8 @@ func HandleMappings(mappings []*legacyData.MappingDef, resolver resolve.Composit
 				}
 			}
 
-			if len(objMapping.targetFields) > 1 {
-				isObjectMapping = true
-				obj, err = constructObjectFromPath(objMapping.targetFields, val, obj)
-				if err != nil {
-					return nil, err
-				}
-			} else if len(objMapping.targetFields) == 1 {
+			if len(objMapping.targetFields) > 0 {
+				isObjectMapping = len(objMapping.targetFields) > 1
 				obj, err = constructObjectFromPath(objMapping.targetFields, val, obj)
 				if err != nil {
 					return nil, err
