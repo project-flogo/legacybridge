@@ -17,13 +17,15 @@ func main() {
 
 	fmt.Println("Generating flogo metadata in ", args[1])
 
-	generateGoMetadata(args[1])
+	err := generateGoMetadata(args[1])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error generating Go Metadata: %v\n", err)
+	}
 }
 
 func generateGoMetadata(dir string) error {
 	//todo optimize metadata recreation to minimize compile times
 	dependencies, err := ListDependencies(dir)
-
 	if err != nil {
 		return err
 	}
@@ -32,7 +34,10 @@ func generateGoMetadata(dir string) error {
 
 		fmt.Println("Generating flogo metadata for:", dependency.Ref)
 
-		createMetadata(dependency)
+		err = createMetadata(dependency)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -76,7 +81,7 @@ func createMetadata(dependency *Dependency) error {
 
 	f, _ := os.Create(mdGoFilePath)
 	RenderTemplate(f, tplMetadata, info)
-	f.Close()
+	_ = f.Close()
 
 	return nil
 }

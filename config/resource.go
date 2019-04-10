@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/project-flogo/core/app/resource"
-
 	legacyResource "github.com/TIBCOSoftware/flogo-lib/app/resource"
+	"github.com/project-flogo/core/app/resource"
 )
 
 type ResourceDataConverter func(legacyData json.RawMessage) (json.RawMessage, error)

@@ -3,9 +3,8 @@ package config
 import (
 	"encoding/json"
 
-	"github.com/project-flogo/core/app"
-
 	legacyApp "github.com/TIBCOSoftware/flogo-lib/app"
+	"github.com/project-flogo/core/app"
 )
 
 func ConvertLegacyJson(legacyJson string) (string, error) {

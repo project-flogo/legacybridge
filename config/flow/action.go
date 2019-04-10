@@ -6,13 +6,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/project-flogo/core/action"
-	"github.com/project-flogo/core/app/resource"
-	"github.com/project-flogo/legacybridge/config"
-
 	legacyFlow "github.com/TIBCOSoftware/flogo-contrib/action/flow"
 	legacyDef "github.com/TIBCOSoftware/flogo-contrib/action/flow/definition"
 	legacyAction "github.com/TIBCOSoftware/flogo-lib/core/action"
+	"github.com/project-flogo/core/action"
+	"github.com/project-flogo/core/app/resource"
+	"github.com/project-flogo/legacybridge/config"
 )
 
 func init() {

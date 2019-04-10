@@ -1,12 +1,11 @@
 package config
 
 import (
+	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
 	"github.com/project-flogo/core/app/resource"
 	"github.com/project-flogo/core/data"
 	"github.com/project-flogo/core/data/schema"
 	"github.com/project-flogo/legacybridge"
-
-	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
 )
 
 type ConversionContext struct {

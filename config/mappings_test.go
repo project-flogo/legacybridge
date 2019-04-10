@@ -4,14 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/project-flogo/core/data"
-	"github.com/project-flogo/core/data/expression/function"
-	"github.com/project-flogo/core/data/mapper"
 	"reflect"
 	"testing"
 
 	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
+	"github.com/project-flogo/core/data"
+	"github.com/project-flogo/core/data/expression/function"
 	_ "github.com/project-flogo/core/data/expression/script"
+	"github.com/project-flogo/core/data/mapper"
 	"github.com/project-flogo/core/data/resolve"
 	"github.com/stretchr/testify/assert"
 )
@@ -145,22 +145,21 @@ func TestNewArrayMapper(t *testing.T) {
 
 func TestPathToObject(t *testing.T) {
 	path := []string{"data", "field", "value"}
-	obj := make(map[string]interface{})
-
-	constructObjectFromPath(path, "1234", obj)
+	obj, err := constructObjectFromPath(path, "1234", make(map[string]interface{}))
+	assert.Nil(t, err)
 	v, _ := json.Marshal(obj)
 	fmt.Println(string(v))
-	assert.Equal(t, "1234", obj["data"].(map[string]interface{})["field"].(map[string]interface{})["value"])
+	assert.Equal(t, "1234", obj.(map[string]interface{})["data"].(map[string]interface{})["field"].(map[string]interface{})["value"])
 }
 
 func TestPathToObjectArray(t *testing.T) {
 	path := []string{"data[2]", "field[0]", "value"}
-	obj := make(map[string]interface{})
 
-	constructObjectFromPath(path, "1234", obj)
+	obj, err := constructObjectFromPath(path, "1234", make(map[string]interface{}))
+	assert.Nil(t, err)
 	v, _ := json.Marshal(obj)
 	fmt.Println(string(v))
-	assert.Equal(t, "1234", obj["data"].([]interface{})[2].(map[string]interface{})["field"].([]interface{})[0].(map[string]interface{})["value"])
+	assert.Equal(t, "1234", obj.(map[string]interface{})["data"].([]interface{})[2].(map[string]interface{})["field"].([]interface{})[0].(map[string]interface{})["value"])
 }
 
 func TestMultiplePathToObject(t *testing.T) {
@@ -168,46 +167,47 @@ func TestMultiplePathToObject(t *testing.T) {
 
 	path2 := []string{"data", "field2", "value"}
 
-	obj := make(map[string]interface{})
+	obj, err := constructObjectFromPath(path, "1234", make(map[string]interface{}))
+	assert.Nil(t, err)
 
-	constructObjectFromPath(path, "1234", obj)
-
-	constructObjectFromPath(path2, "1234", obj)
+	obj, err = constructObjectFromPath(path2, "1234", obj)
 
 	v, _ := json.Marshal(obj)
 	fmt.Println(string(v))
-	assert.Equal(t, "1234", obj["data"].(map[string]interface{})["field"].(map[string]interface{})["value"])
+	assert.Equal(t, "1234", obj.(map[string]interface{})["data"].(map[string]interface{})["field"].(map[string]interface{})["value"])
 }
 
 func TestMultiplePathToObjectArray(t *testing.T) {
 	path := []string{"data[2]", "field[0]", "value"}
-	obj := make(map[string]interface{})
 	path2 := []string{"data[4]", "field[0]", "value"}
 
-	constructObjectFromPath(path, "1234", obj)
+	obj, err := constructObjectFromPath(path, "1234", make(map[string]interface{}))
+	assert.Nil(t, err)
 
-	constructObjectFromPath(path2, "1234", obj)
+	obj, err = constructObjectFromPath(path2, "1234", obj)
+	assert.Nil(t, err)
 
 	v, _ := json.Marshal(obj)
 	fmt.Println(string(v))
-	assert.Equal(t, "1234", obj["data"].([]interface{})[2].(map[string]interface{})["field"].([]interface{})[0].(map[string]interface{})["value"])
-	assert.Equal(t, "1234", obj["data"].([]interface{})[4].(map[string]interface{})["field"].([]interface{})[0].(map[string]interface{})["value"])
+	assert.Equal(t, "1234", obj.(map[string]interface{})["data"].([]interface{})[2].(map[string]interface{})["field"].([]interface{})[0].(map[string]interface{})["value"])
+	assert.Equal(t, "1234", obj.(map[string]interface{})["data"].([]interface{})[4].(map[string]interface{})["field"].([]interface{})[0].(map[string]interface{})["value"])
 
 }
 
 func TestMultiplePathToObjectArray2(t *testing.T) {
 	path := []string{"data", "field", "value[0]"}
-	obj := make(map[string]interface{})
 	path2 := []string{"data", "field", "value[4]"}
 
-	constructObjectFromPath(path, 22, obj)
+	obj, err := constructObjectFromPath(path, 22, make(map[string]interface{}))
+	assert.Nil(t, err)
 
-	constructObjectFromPath(path2, 33, obj)
+	obj, err = constructObjectFromPath(path2, 33, obj)
+	assert.Nil(t, err)
 
 	v, _ := json.Marshal(obj)
 	fmt.Println(string(v))
-	assert.Equal(t, 22, obj["data"].(map[string]interface{})["field"].(map[string]interface{})["value"].([]interface{})[0])
-	assert.Equal(t, 33, obj["data"].(map[string]interface{})["field"].(map[string]interface{})["value"].([]interface{})[4])
+	assert.Equal(t, 22, obj.(map[string]interface{})["data"].(map[string]interface{})["field"].(map[string]interface{})["value"].([]interface{})[0])
+	assert.Equal(t, 33, obj.(map[string]interface{})["data"].(map[string]interface{})["field"].(map[string]interface{})["value"].([]interface{})[4])
 
 }
 

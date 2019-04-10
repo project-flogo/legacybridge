@@ -5,17 +5,19 @@ import (
 
 	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
 	legacyTrigger "github.com/TIBCOSoftware/flogo-lib/core/trigger"
-
 	"github.com/project-flogo/core/data"
 	"github.com/project-flogo/core/data/coerce"
 	"github.com/project-flogo/core/data/schema"
 	"github.com/project-flogo/core/support"
+	"github.com/project-flogo/core/support/log"
 	"github.com/project-flogo/core/trigger"
 )
 
 func RegisterLegacyTriggerFactory(ref string, factory legacyTrigger.Factory) {
-	w := wrapTriggerFactory(factory)
-	trigger.LegacyRegister(ref, w)
+	err := trigger.LegacyRegister(ref, wrapTriggerFactory(factory))
+	if err != nil {
+		log.RootLogger().Warnf("Error registering legacy trigger '%s': %v", ref, err)
+	}
 }
 
 func GetTrigger(trg legacyTrigger.Trigger) trigger.Trigger {
