@@ -105,7 +105,11 @@ var pluginUpgrade = &cobra.Command{
 				newJsonFile = outFile
 			} else {
 				//rename existing flogo.json
-				os.Rename(flogoJsonPath, filepath.Join(workingDir, "flogo.json.bak"))
+				err := os.Rename(flogoJsonPath, filepath.Join(workingDir, "flogo.json.bak"))
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error: unable to backup original json file: %s", err.Error())
+					os.Exit(1)
+				}
 			}
 
 			err = ioutil.WriteFile(newJsonFile, []byte(newJson), 0644)
