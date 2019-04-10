@@ -1,14 +1,13 @@
 package config
 
 import (
+	legacyAction "github.com/TIBCOSoftware/flogo-lib/core/action"
+	legacyTrigger "github.com/TIBCOSoftware/flogo-lib/core/trigger"
 	"github.com/project-flogo/core/action"
 	"github.com/project-flogo/core/data/resolve"
 	"github.com/project-flogo/core/data/schema"
 	"github.com/project-flogo/core/trigger"
 	"github.com/project-flogo/legacybridge"
-
-	legacyAction "github.com/TIBCOSoftware/flogo-lib/core/action"
-	legacyTrigger "github.com/TIBCOSoftware/flogo-lib/core/trigger"
 )
 
 type ActionConverter func(ctx *ConversionContext, laConfig *legacyAction.Config) (*action.Config, error)

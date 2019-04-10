@@ -2,12 +2,11 @@ package legacybridge
 
 import (
 	"context"
-	"github.com/project-flogo/core/support/log"
 
 	legacyAction "github.com/TIBCOSoftware/flogo-lib/core/action"
-
 	"github.com/project-flogo/core/action"
 	"github.com/project-flogo/core/data/metadata"
+	"github.com/project-flogo/core/support/log"
 )
 
 func RegisterLegacyAction(ref string, legacyFactory legacyAction.Factory) {

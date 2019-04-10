@@ -2,15 +2,14 @@ package legacybridge
 
 import (
 	"context"
-	"github.com/project-flogo/core/support/log"
 
 	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
 	legacyTrigger "github.com/TIBCOSoftware/flogo-lib/core/trigger"
-
 	"github.com/project-flogo/core/data"
 	"github.com/project-flogo/core/data/coerce"
 	"github.com/project-flogo/core/data/schema"
 	"github.com/project-flogo/core/support"
+	"github.com/project-flogo/core/support/log"
 	"github.com/project-flogo/core/trigger"
 )
 

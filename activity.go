@@ -3,14 +3,13 @@ package legacybridge
 import (
 	legacyActivity "github.com/TIBCOSoftware/flogo-lib/core/activity"
 	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
-	"github.com/project-flogo/core/support/log"
-
 	"github.com/project-flogo/core/activity"
 	"github.com/project-flogo/core/data"
 	"github.com/project-flogo/core/data/metadata"
 	"github.com/project-flogo/core/data/resolve"
 	"github.com/project-flogo/core/data/schema"
 	"github.com/project-flogo/core/support"
+	"github.com/project-flogo/core/support/log"
 	"github.com/project-flogo/flow/definition"
 )
 

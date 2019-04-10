@@ -9,12 +9,11 @@ import (
 	"text/scanner"
 	"unicode"
 
+	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
 	"github.com/project-flogo/core/data/coerce"
 	"github.com/project-flogo/core/data/expression"
 	"github.com/project-flogo/core/data/mapper"
 	"github.com/project-flogo/core/data/resolve"
-
-	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
 )
 
 const (

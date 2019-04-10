@@ -3,15 +3,15 @@ package flow
 import (
 	"encoding/json"
 	"fmt"
+
+	legacyDef "github.com/TIBCOSoftware/flogo-contrib/action/flow/definition"
+	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
 	"github.com/project-flogo/core/activity"
 	"github.com/project-flogo/core/data"
 	"github.com/project-flogo/core/data/coerce"
 	"github.com/project-flogo/core/data/metadata"
 	"github.com/project-flogo/flow/definition"
 	"github.com/project-flogo/legacybridge/config"
-
-	legacyDef "github.com/TIBCOSoftware/flogo-contrib/action/flow/definition"
-	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
 )
 
 func convertLegacyFlow(rep *legacyDef.DefinitionRep) (*definition.DefinitionRep, error) {

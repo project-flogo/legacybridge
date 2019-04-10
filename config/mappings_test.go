@@ -4,14 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/project-flogo/core/data"
-	"github.com/project-flogo/core/data/expression/function"
-	"github.com/project-flogo/core/data/mapper"
 	"reflect"
 	"testing"
 
 	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
+	"github.com/project-flogo/core/data"
+	"github.com/project-flogo/core/data/expression/function"
 	_ "github.com/project-flogo/core/data/expression/script"
+	"github.com/project-flogo/core/data/mapper"
 	"github.com/project-flogo/core/data/resolve"
 	"github.com/stretchr/testify/assert"
 )
@@ -167,8 +167,7 @@ func TestMultiplePathToObject(t *testing.T) {
 
 	path2 := []string{"data", "field2", "value"}
 
-
-	obj, err := constructObjectFromPath(path, "1234",  make(map[string]interface{}))
+	obj, err := constructObjectFromPath(path, "1234", make(map[string]interface{}))
 	assert.Nil(t, err)
 
 	obj, err = constructObjectFromPath(path2, "1234", obj)
