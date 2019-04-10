@@ -212,12 +212,12 @@ func upgradeReturnReply(input map[string]interface{}, rep *legacyDef.ActivityCon
 
 	if isReturnReply {
 		if input["mappings"] != nil {
-			byts, err := coerce.ToBytes(input["mappings"])
+			bytes, err := coerce.ToBytes(input["mappings"])
 			if err != nil {
 				return false, err
 			}
-			var returnMapping = []*legacyData.MappingDef{}
-			err = json.Unmarshal(byts, &returnMapping)
+			var returnMapping []*legacyData.MappingDef
+			err = json.Unmarshal(bytes, &returnMapping)
 			if err != nil {
 				return false, err
 			}

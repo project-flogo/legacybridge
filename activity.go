@@ -3,6 +3,7 @@ package legacybridge
 import (
 	legacyActivity "github.com/TIBCOSoftware/flogo-lib/core/activity"
 	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
+	"github.com/project-flogo/core/support/log"
 
 	"github.com/project-flogo/core/activity"
 	"github.com/project-flogo/core/data"
@@ -14,8 +15,10 @@ import (
 )
 
 func RegisterLegacyActivity(act legacyActivity.Activity) {
-	wa := wrapActivity(act)
-	activity.LegacyRegister(act.Metadata().ID, wa)
+	err := activity.LegacyRegister(act.Metadata().ID, wrapActivity(act))
+	if err != nil {
+		log.RootLogger().Warnf("Error registering legacy activity '%s': %v", act.Metadata().ID, err)
+	}
 }
 
 func GetActivity(act legacyActivity.Activity) activity.Activity {
@@ -182,14 +185,20 @@ func (w *activityCtxWrapper) SetOutput(name string, value interface{}) {
 			if attr.Type() == legacyData.TypeComplexObject {
 
 				if cVal, ok := value.(*legacyData.ComplexObject); ok {
-					w.ctx.SetOutput(name, cVal.Value)
+					err := w.ctx.SetOutput(name, cVal.Value)
+					if err != nil {
+						log.RootLogger().Errorf("error setting output '%s': %v", attr.Name(), err)
+					}
 					return
 				}
 			}
 		}
 	}
 
-	w.ctx.SetOutput(name, value)
+	err := w.ctx.SetOutput(name, value)
+	if err != nil {
+		log.RootLogger().Errorf("error setting output '%s': %v", name, err)
+	}
 }
 
 func (w *activityCtxWrapper) GetSetting(setting string) (value interface{}, exists bool) {
@@ -259,9 +268,13 @@ func (w *activityHostWrapper) Reply(replyData map[string]*legacyData.Attribute, 
 	for name, attr := range replyData {
 		if attr.Type() == legacyData.TypeComplexObject {
 			if attr.Value() != nil {
-				var compx *legacyData.ComplexObject
-				compx, err = legacyData.CoerceToComplexObject(attr.Value())
-				reply[name] = compx.Value
+				if compx, err := legacyData.CoerceToComplexObject(attr.Value()); err != nil && compx != nil {
+					reply[name] = compx.Value
+				} else {
+					if err != nil {
+						log.RootLogger().Errorf("Unable to coerce legacy complex attr '%s': %v", name, err)
+					}
+				}
 			} else {
 				reply[name] = nil
 			}
@@ -278,9 +291,13 @@ func (w *activityHostWrapper) Return(returnData map[string]*legacyData.Attribute
 	for name, attr := range returnData {
 		if attr.Type() == legacyData.TypeComplexObject {
 			if attr.Value() != nil {
-				var compx *legacyData.ComplexObject
-				compx, err = legacyData.CoerceToComplexObject(attr.Value())
-				ret[name] = compx.Value
+				if compx, err := legacyData.CoerceToComplexObject(attr.Value()); err != nil && compx != nil {
+					ret[name] = compx.Value
+				} else {
+					if err != nil {
+						log.RootLogger().Errorf("Unable to coerce legacy complex attr '%s': %v", name, err)
+					}
+				}
 			} else {
 				ret[name] = nil
 			}

@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	MAP_TO_INPUT = "$INPUT"
+	LegacyInputResolver = "$INPUT"
 )
 
 func ConvertLegacyMappings(mappings *legacyData.IOMappings, resolver resolve.CompositeResolver) (input map[string]interface{}, output map[string]interface{}, err error) {
@@ -409,9 +409,9 @@ func convertMapperValue(value interface{}, typ string, resolver resolve.Composit
 }
 
 func RemovePrefixInput(str string) string {
-	if str != "" && strings.HasPrefix(str, MAP_TO_INPUT) {
+	if str != "" && strings.HasPrefix(str, LegacyInputResolver) {
 		//Remove $INPUT for mapTo
-		newMapTo := str[len(MAP_TO_INPUT):]
+		newMapTo := str[len(LegacyInputResolver):]
 		if strings.HasPrefix(newMapTo, ".") {
 			newMapTo = newMapTo[1:]
 		}

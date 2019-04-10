@@ -2,6 +2,7 @@ package legacybridge
 
 import (
 	"context"
+	"github.com/project-flogo/core/support/log"
 
 	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
 	legacyTrigger "github.com/TIBCOSoftware/flogo-lib/core/trigger"
@@ -14,8 +15,10 @@ import (
 )
 
 func RegisterLegacyTriggerFactory(ref string, factory legacyTrigger.Factory) {
-	w := wrapTriggerFactory(factory)
-	trigger.LegacyRegister(ref, w)
+	err := trigger.LegacyRegister(ref, wrapTriggerFactory(factory))
+	if err != nil {
+		log.RootLogger().Warnf("Error registering legacy trigger '%s': %v", ref, err)
+	}
 }
 
 func GetTrigger(trg legacyTrigger.Trigger) trigger.Trigger {

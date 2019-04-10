@@ -2,6 +2,7 @@ package legacybridge
 
 import (
 	"context"
+	"github.com/project-flogo/core/support/log"
 
 	legacyAction "github.com/TIBCOSoftware/flogo-lib/core/action"
 
@@ -10,7 +11,10 @@ import (
 )
 
 func RegisterLegacyAction(ref string, legacyFactory legacyAction.Factory) {
-	action.LegacyRegister(ref, &legacyFactoryWrapper{legacyFactory: legacyFactory})
+	err := action.LegacyRegister(ref, &legacyFactoryWrapper{legacyFactory: legacyFactory})
+	if err != nil {
+		log.RootLogger().Warnf("Error registering legacy action '%s': %v", ref, err)
+	}
 }
 
 type legacyFactoryWrapper struct {
