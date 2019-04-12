@@ -350,12 +350,12 @@ func TestConvertMappingValue3(t *testing.T) {
 
 	v2, _ := json.Marshal(output)
 	fmt.Println("output:", string(v2))
-	assert.Equal(t, "=$.body.name", input["data"].([]interface{})[0])
-	assert.Equal(t, "=$.body.name", input["data"].([]interface{})[1])
+	assert.Equal(t, "=$.body.name", input["data"].(*mapper.ObjectMapping).Mapping.([]interface{})[0])
+	assert.Equal(t, "=$.body.name", input["data"].(*mapper.ObjectMapping).Mapping.([]interface{})[1])
 	assert.Equal(t, "=$.body.id", input["input1"].(*mapper.ObjectMapping).Mapping.([]interface{})[0].(map[string]interface{})["a"].(map[string]interface{})["b"])
 
 	//output
-	assert.Equal(t, "=$.res", output["data"].(map[string]interface{})["return"])
+	assert.Equal(t, "=$.res", output["data"].(*mapper.ObjectMapping).Mapping.(map[string]interface{})["return"])
 	assert.Equal(t, float64(200), output["code"])
 
 }
@@ -389,8 +389,8 @@ func TestConvertMappingValue4(t *testing.T) {
 
 	v2, _ := json.Marshal(output)
 	fmt.Println("output:", string(v2))
-	assert.Equal(t, "=$.body.name", input["data"].([]interface{})[0])
-	assert.Equal(t, "=$.body.ddd", input["data"].([]interface{})[1])
+	assert.Equal(t, "=$.body.name", input["data"].(*mapper.ObjectMapping).Mapping.([]interface{})[0])
+	assert.Equal(t, "=$.body.ddd", input["data"].(*mapper.ObjectMapping).Mapping.([]interface{})[1])
 }
 
 func TestConvertMappingWithArrayMapping(t *testing.T) {
@@ -444,13 +444,39 @@ func TestConvertMappingWithArrayMapping(t *testing.T) {
 
 	v2, _ := json.Marshal(output)
 	fmt.Println("output:", string(v2))
-	assert.Equal(t, "=$.body.name", input["data"].([]interface{})[0])
-	assert.Equal(t, "=$.body.name", input["data"].([]interface{})[1])
+	assert.Equal(t, "=$.body.name", input["data"].(*mapper.ObjectMapping).Mapping.([]interface{})[0])
+	assert.Equal(t, "=$.body.name", input["data"].(*mapper.ObjectMapping).Mapping.([]interface{})[1])
 	assert.Equal(t, "=$.body.id", input["input1"].(*mapper.ObjectMapping).Mapping.([]interface{})[0].(map[string]interface{})["a"].(map[string]interface{})["b"])
 	assert.Equal(t, "=$.state", input["input1"].(*mapper.ObjectMapping).Mapping.([]interface{})[1].(map[string]interface{})["c"].(map[string]interface{})["@foreach($activity[a1].field.addresses)"].(map[string]interface{})["state"])
 	//output
-	assert.Equal(t, "=$.res", output["data"].(map[string]interface{})["return"])
+	assert.Equal(t, "=$.res", output["data"].(*mapper.ObjectMapping).Mapping.(map[string]interface{})["return"])
 	assert.Equal(t, float64(200), output["code"])
+
+}
+
+func TestConvertLiteralObject(t *testing.T) {
+	mappings := `{
+        "input": [
+         {
+          "mapTo": "field1.id",
+          "type": "object",
+          "value": {"id":"id2", "name":"name2"}
+         }
+		]
+       }`
+
+	mapping := &legacyData.IOMappings{}
+
+	err := json.Unmarshal([]byte(mappings), mapping)
+	assert.Nil(t, err)
+
+	input, _, err := ConvertLegacyMappings(mapping, resolve.GetBasicResolver())
+	assert.Nil(t, err)
+
+	v, _ := json.Marshal(input)
+	fmt.Println("input:", string(v))
+
+	assert.Equal(t, "id2", input["field1"].(*mapper.ObjectMapping).Mapping.(map[string]interface{})["id"].(map[string]interface{})["id"])
 
 }
 
