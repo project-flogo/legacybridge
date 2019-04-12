@@ -101,7 +101,7 @@ func convertLegacyHandler(ctx *ConversionContext, ltHandlerConfig *legacyTrigger
 	}
 
 	if len(outSchemas) > 0 {
-		newConfig.OutputSchemas = outSchemas
+		newConfig.Schemas = &trigger.SchemaConfig{Output: outSchemas}
 	}
 
 	if ltHandlerConfig.ActionId != "" {

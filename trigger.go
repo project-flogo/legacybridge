@@ -2,12 +2,12 @@ package legacybridge
 
 import (
 	"context"
+	"github.com/project-flogo/core/data/schema"
 
 	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
 	legacyTrigger "github.com/TIBCOSoftware/flogo-lib/core/trigger"
 	"github.com/project-flogo/core/data"
 	"github.com/project-flogo/core/data/coerce"
-	"github.com/project-flogo/core/data/schema"
 	"github.com/project-flogo/core/support"
 	"github.com/project-flogo/core/support/log"
 	"github.com/project-flogo/core/trigger"
@@ -67,15 +67,18 @@ func (w *triggerFactoryWrapper) New(config *trigger.Config) (trg trigger.Trigger
 		lHandleConfig.Settings = hConfig.Settings
 		lHandleConfig.Output = make(map[string]interface{})
 
-		for name, sche := range hConfig.OutputSchemas {
-			attr, ok := w.lTrigger.Metadata().Output[name]
-			if ok && attr.Type() == legacyData.TypeComplexObject {
-				s, err := schema.FindOrCreate(sche)
-				if err != nil {
-					return nil, err
+		if hConfig.Schemas != nil {
+			for name, sche := range hConfig.Schemas.Output {
+				attr, ok := w.lTrigger.Metadata().Output[name]
+				if ok && attr.Type() == legacyData.TypeComplexObject {
+					s, err := schema.FindOrCreate(sche)
+					if err != nil {
+						return nil, err
+					}
+					lHandleConfig.Output[name] = &legacyData.ComplexObject{Metadata: s.Value(), Value: nil}
 				}
-				lHandleConfig.Output[name] = &legacyData.ComplexObject{Metadata: s.Value(), Value: nil}
 			}
+
 		}
 
 		lConfig.Handlers[i] = lHandleConfig
