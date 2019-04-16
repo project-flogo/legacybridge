@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"github.com/project-flogo/core/data/property"
 
 	legacyApp "github.com/TIBCOSoftware/flogo-lib/app"
 	"github.com/project-flogo/core/app"
@@ -51,6 +52,13 @@ func ConvertLegacyAppConfig(laConfig *legacyApp.Config) (*app.Config, error) {
 			newConfig.Properties = append(newConfig.Properties, newAttr)
 		}
 	}
+
+	properties := make(map[string]interface{}, len(newConfig.Properties))
+	for _, attr := range newConfig.Properties {
+		properties[attr.Name()] = attr.Value()
+	}
+
+	property.SetDefaultManager(property.NewManager(properties))
 
 	//channels
 	if len(laConfig.Channels) > 0 {

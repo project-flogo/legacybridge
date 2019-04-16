@@ -7,6 +7,7 @@ import (
 	"github.com/project-flogo/core/data/resolve"
 	"github.com/project-flogo/core/data/schema"
 	"github.com/project-flogo/core/trigger"
+	"github.com/project-flogo/flow/definition"
 	"github.com/project-flogo/legacybridge"
 )
 
@@ -51,7 +52,7 @@ func convertLegacyTrigger(ctx *ConversionContext, ltConfig *legacyTrigger.Config
 	if len(ltConfig.Settings) > 0 {
 		newConfig.Settings = make(map[string]interface{})
 		for key, value := range ltConfig.Settings {
-			newConfig.Settings[key] = value
+			newConfig.Settings[key] = ConvertValue(value, definition.GetDataResolver())
 		}
 	}
 
@@ -81,7 +82,7 @@ func convertLegacyHandler(ctx *ConversionContext, ltHandlerConfig *legacyTrigger
 	if len(ltHandlerConfig.Settings) > 0 {
 		newConfig.Settings = make(map[string]interface{})
 		for key, value := range ltHandlerConfig.Settings {
-			newConfig.Settings[key] = value
+			newConfig.Settings[key] = ConvertValue(value, definition.GetDataResolver())
 		}
 	}
 
@@ -156,7 +157,7 @@ func ConvertValues(oldValues map[string]interface{}) (map[string]interface{}, ma
 
 	if len(oldValues) > 0 {
 		for name, value := range oldValues {
-			newVals[name] = value
+			newVals[name] = ConvertValue(value, definition.GetDataResolver())
 
 			if value != nil {
 				// cannot rely on activity metadata, since we don't know what is imported,
