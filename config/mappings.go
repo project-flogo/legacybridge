@@ -367,13 +367,7 @@ func toString(val interface{}) (string, error) {
 func convertMapperValue(value interface{}, typ string, resolver resolve.CompositeResolver) (interface{}, error) {
 	switch typ {
 	case "assign", "1":
-		if v, ok := value.(string); ok {
-			if !ResolvableExpr(v, resolver) {
-				return v, nil
-			}
-			return "=" + v, nil
-		}
-		return value, nil
+		return ConvertValue(value, resolver), nil
 	case "literal", "2":
 		return value, nil
 	case "expression", "3":
@@ -393,18 +387,23 @@ func convertMapperValue(value interface{}, typ string, resolver resolve.Composit
 		return ToNewArray(arrayMapping, resolver)
 	case "primitive":
 		//This use to handle very old array mapping type
-		if priValue, ok := value.(string); ok {
-			if !ResolvableExpr(priValue, resolver) {
-				//Not an expr, just return is as value
-				return priValue, nil
-			}
-			return "=" + priValue, nil
-		}
-
-		return value, nil
+		return ConvertValue(value, resolver), nil
 	default:
 		return 0, errors.New("unsupported mapping type: " + typ)
 	}
+}
+
+func ConvertValue(value interface{}, resolver resolve.CompositeResolver) interface{} {
+	if priValue, ok := value.(string); ok && len(priValue) > 0 {
+
+		if !ResolvableExpr(priValue, resolver) {
+			//Not an expr, just return is as value
+			return priValue
+		}
+		return "=" + priValue
+	}
+
+	return value
 }
 
 func RemovePrefixInput(str string) string {
