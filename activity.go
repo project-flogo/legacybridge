@@ -140,7 +140,7 @@ func (w *activityCtxWrapper) GetInput(name string) interface{} {
 						md = s.Value()
 					}
 				}
-				if val == "" {
+				if val == nil || val == "" {
 					//Set to empty object
 					val = "{}"
 				}
