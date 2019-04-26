@@ -107,12 +107,20 @@ func (aw *activityWrapper) Eval(ctx activity.Context) (done bool, err error) {
 }
 
 func wrapActContext(ctx activity.Context, legacyAct legacyActivity.Activity) legacyActivity.Context {
-	return &activityCtxWrapper{ctx: ctx, legacyAct: legacyAct}
+
+	wrappedCtx := &activityCtxWrapper{ctx: ctx, legacyAct: legacyAct}
+
+	if lCtx, ok := ctx.(activity.LegacyCtx); ok {
+		wrappedCtx.lCtx = lCtx
+	}
+
+	return wrappedCtx
 }
 
 type activityCtxWrapper struct {
 	legacyAct legacyActivity.Activity
 	ctx       activity.Context
+	lCtx      activity.LegacyCtx
 }
 
 func (w *activityCtxWrapper) ActivityHost() legacyActivity.Host {
@@ -154,6 +162,11 @@ func (w *activityCtxWrapper) GetInput(name string) interface{} {
 
 func (w *activityCtxWrapper) GetOutput(name string) interface{} {
 
+	var value interface{}
+	if w.lCtx != nil {
+		value = w.lCtx.GetOutput(name)
+	}
+
 	// if the input value is complex, we need to modify it
 	if oldMdOutput := w.legacyAct.Metadata().Output; oldMdOutput != nil {
 		if attr, ok := oldMdOutput[name]; ok {
@@ -168,12 +181,12 @@ func (w *activityCtxWrapper) GetOutput(name string) interface{} {
 					}
 				}
 
-				return &legacyData.ComplexObject{Metadata: md, Value: nil}
+				return &legacyData.ComplexObject{Metadata: md, Value: value}
 			}
 		}
 	}
 
-	return nil
+	return value
 }
 
 func (w *activityCtxWrapper) SetOutput(name string, value interface{}) {
