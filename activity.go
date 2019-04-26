@@ -107,12 +107,20 @@ func (aw *activityWrapper) Eval(ctx activity.Context) (done bool, err error) {
 }
 
 func wrapActContext(ctx activity.Context, legacyAct legacyActivity.Activity) legacyActivity.Context {
-	return &activityCtxWrapper{ctx: ctx, legacyAct: legacyAct}
+
+	wrappedCtx := &activityCtxWrapper{ctx: ctx, legacyAct: legacyAct}
+
+	if lCtx, ok := ctx.(activity.LegacyCtx); ok {
+		wrappedCtx.lCtx = lCtx
+	}
+
+	return wrappedCtx
 }
 
 type activityCtxWrapper struct {
 	legacyAct legacyActivity.Activity
 	ctx       activity.Context
+	lCtx      activity.LegacyCtx
 }
 
 func (w *activityCtxWrapper) ActivityHost() legacyActivity.Host {
@@ -171,6 +179,10 @@ func (w *activityCtxWrapper) GetOutput(name string) interface{} {
 				return &legacyData.ComplexObject{Metadata: md, Value: nil}
 			}
 		}
+	}
+
+	if w.lCtx != nil {
+		return w.lCtx.GetOutput(name)
 	}
 
 	return nil
