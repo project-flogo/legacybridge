@@ -162,6 +162,11 @@ func (w *activityCtxWrapper) GetInput(name string) interface{} {
 
 func (w *activityCtxWrapper) GetOutput(name string) interface{} {
 
+	var value interface{}
+	if w.lCtx != nil {
+		value = w.lCtx.GetOutput(name)
+	}
+
 	// if the input value is complex, we need to modify it
 	if oldMdOutput := w.legacyAct.Metadata().Output; oldMdOutput != nil {
 		if attr, ok := oldMdOutput[name]; ok {
@@ -176,16 +181,12 @@ func (w *activityCtxWrapper) GetOutput(name string) interface{} {
 					}
 				}
 
-				return &legacyData.ComplexObject{Metadata: md, Value: nil}
+				return &legacyData.ComplexObject{Metadata: md, Value: value}
 			}
 		}
 	}
 
-	if w.lCtx != nil {
-		return w.lCtx.GetOutput(name)
-	}
-
-	return nil
+	return value
 }
 
 func (w *activityCtxWrapper) SetOutput(name string, value interface{}) {
