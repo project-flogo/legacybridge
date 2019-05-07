@@ -394,5 +394,16 @@ func (fd *flowDetails) Name() string {
 }
 
 func (fd *flowDetails) ReplyHandler() legacyActivity.ReplyHandler {
-	return nil
+	return &replyHandler{fd}
+}
+
+type replyHandler struct {
+	flowDetails *flowDetails
+}
+
+func (r *replyHandler) Reply(code int, data interface{}, err error) {
+	m := make(map[string]interface{})
+	m["code"] = code
+	m["data"] = data
+	r.flowDetails.host.Reply(m, err)
 }
