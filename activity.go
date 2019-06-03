@@ -214,7 +214,7 @@ func (w *activityCtxWrapper) SetOutput(name string, value interface{}) {
 }
 
 func (w *activityCtxWrapper) GetSetting(setting string) (value interface{}, exists bool) {
-	return nil, false
+	return w.lCtx.GetSetting(setting)
 }
 
 func (*activityCtxWrapper) GetInitValue(key string) (value interface{}, exists bool) {
