@@ -71,12 +71,21 @@ func GetComplexObjectInfo(val interface{}) (interface{}, string, bool) {
 		if val == "" {
 			return nil, "", false
 		} else {
-			complexObject := &legacyData.ComplexObject{}
-			err := json.Unmarshal([]byte(t), complexObject)
+			var complexMap map[string]interface{}
+			err := json.Unmarshal([]byte(t), &complexMap)
 			if err != nil {
 				return nil, "", false
 			}
-			return complexObject.Value, complexObject.Metadata, true
+
+			v, hasVal := complexMap["value"]
+			mdI, hasMd := complexMap["metadata"]
+			md := ""
+			if hasMd {
+				md, hasMd = mdI.(string)
+			}
+			if hasVal && hasMd {
+				return v, md, true
+			}
 		}
 	case map[string]interface{}:
 		v, hasVal := t["value"]
