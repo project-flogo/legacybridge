@@ -109,6 +109,22 @@ func (w *triggerWrapper) Stop() error {
 	return w.legacyTrigger.Stop()
 }
 
+func (w *triggerWrapper) Resume() error {
+	fc, ok := w.legacyTrigger.(trigger.FlowControlAware)
+	if ok {
+		return fc.Resume()
+	}
+	return nil
+}
+
+func (w *triggerWrapper) Pause() error {
+	fc, ok := w.legacyTrigger.(trigger.FlowControlAware)
+	if ok {
+		return fc.Pause()
+	}
+	return nil
+}
+
 func toNewMetadata(lMd *legacyTrigger.Metadata) *trigger.Metadata {
 
 	newMd := &trigger.Metadata{}
