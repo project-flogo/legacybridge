@@ -2,6 +2,7 @@ package legacybridge
 
 import (
 	"context"
+
 	"github.com/project-flogo/core/data/schema"
 
 	legacyData "github.com/TIBCOSoftware/flogo-lib/core/data"
@@ -110,7 +111,7 @@ func (w *triggerWrapper) Stop() error {
 }
 
 func (w *triggerWrapper) Resume() error {
-	fc, ok := w.legacyTrigger.(trigger.FlowControlAware)
+	fc, ok := w.legacyTrigger.(trigger.EventFlowControlAware)
 	if ok {
 		return fc.Resume()
 	}
@@ -118,7 +119,7 @@ func (w *triggerWrapper) Resume() error {
 }
 
 func (w *triggerWrapper) Pause() error {
-	fc, ok := w.legacyTrigger.(trigger.FlowControlAware)
+	fc, ok := w.legacyTrigger.(trigger.EventFlowControlAware)
 	if ok {
 		return fc.Pause()
 	}
