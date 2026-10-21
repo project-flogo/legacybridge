@@ -53,9 +53,9 @@ func ConvertLegacyAppConfig(laConfig *legacyApp.Config) (*app.Config, error) {
 		}
 	}
 
-	properties := make(map[string]interface{}, len(newConfig.Properties))
+	properties := make(map[string]property.Property, len(newConfig.Properties))
 	for _, attr := range newConfig.Properties {
-		properties[attr.Name()] = attr.Value()
+		properties[attr.Name()] = property.Property{Value: attr.Value(), Overridable: true}
 	}
 
 	property.SetDefaultManager(property.NewManager(properties))
